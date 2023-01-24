@@ -1,15 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using static_sv.DTOs;
+using static_sv.Interfaces;
+using static_sv.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration Configuration = builder.Configuration;
+
+builder.Services.AddScoped<IRequestValidator, RequestValidator>();
+builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 app.MapGet("/", () => "Hello World!");
 
-app.MapPost("/api/v1/statics", ([FromBody] StaticModel model) =>
+app.MapPost("/api/v1/statics", ([FromBody] StaticModel model, IHttpContextAccessor contextAccessor, IRequestValidator requestValidator) =>
 {
+    string xStaticSig = contextAccessor.HttpContext!
+                .Request.Headers[Configuration["Static:Header"]].ToString();
+    
+    bool isValidate = requestValidator.Validate(model, xStaticSig);
+    Console.WriteLine(isValidate.ToString());
     // Decode the Base64 encoded image data
     var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
 
