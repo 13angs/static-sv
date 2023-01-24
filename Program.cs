@@ -18,8 +18,12 @@ app.MapPost("/api/v1/statics", ([FromBody] StaticModel model, IHttpContextAccess
     string xStaticSig = contextAccessor.HttpContext!
                 .Request.Headers[Configuration["Static:Header"]].ToString();
     
-    bool isValidate = requestValidator.Validate(model, xStaticSig);
-    Console.WriteLine(isValidate.ToString());
+    var isValidate = requestValidator.Validate(model, xStaticSig);
+    
+    if(!isValidate.Item1)
+        return new StaticResModel{
+            ErrorCode="ERROR",
+        };
     // Decode the Base64 encoded image data
     var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
 
@@ -46,7 +50,9 @@ app.MapPost("/api/v1/statics", ([FromBody] StaticModel model, IHttpContextAccess
 
             // return Ok(new { imagePath = $"images/{fileName}" });
             StaticResModel resModel = new StaticResModel{
-                ImageUrl=imageUrl
+                ImageUrl=imageUrl,
+                Signature=isValidate.Item2,
+                ErrorCode="SUCCESS"
             };
             return resModel;
         }

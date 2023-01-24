@@ -15,7 +15,7 @@ namespace static_sv.Services
             this.configuration = configuration;
             this.contextAccessor = contextAccessor;
         }
-        public bool Validate(object content, string signature)
+        public Tuple<bool, string> Validate(object content, string signature)
         {
             // get the x-static-signature header for validation
             
@@ -39,12 +39,13 @@ namespace static_sv.Services
             {
                 // Request is valid
                 Console.WriteLine("Success!");
-                return true;
+                string calSignature = Convert.ToBase64String(hmacBytes);
+                return new (true, calSignature);
             }
             
             // Request is not valid
             Console.WriteLine("Failed!");
-            return false;
+            return new (false, "");
         }
     }
 }

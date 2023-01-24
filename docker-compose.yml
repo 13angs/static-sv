@@ -9,5 +9,6 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - ASPNETCORE_DOMAIN_URL=http://localhost:5000
+      - ASPNETCORE_DOMAIN_URL=${ASPNETCORE_DOMAIN_URL}
+      - Static:Secret=${STATIC_SIGNATURE}
 
