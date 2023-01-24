@@ -1,6 +1,6 @@
 namespace static_sv.Interfaces
 {
     public interface IRequestValidator {
-        public bool Validate(object content, string signature);
+        public Tuple<bool, string> Validate(object content, string signature);
     }
 }
