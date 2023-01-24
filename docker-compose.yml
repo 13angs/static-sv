@@ -8,4 +8,6 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - "5000:5000"
+    environment:
+      - ASPNETCORE_DOMAIN_URL=http://localhost:5000
 

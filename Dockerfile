@@ -19,7 +19,8 @@ FROM base AS runtime
 EXPOSE 5000
 ENV TZ=Asia/Bangkok
 RUN apk update && \
-    apk add --no-cache tzdata
+    apk add --no-cache tzdata && \
+    mkdir -p wwwroot/images
 COPY --from=dotnet-build /src/publish /app
 
 CMD ["dotnet", "/app/static-sv.dll"]
