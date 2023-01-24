@@ -1,0 +1,7 @@
+**.devcontainer
+**bin
+**obj
+**.gitignore
+**.*.json
+**wwwroot
+**sample

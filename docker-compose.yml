@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  api:
+    image: 13angs/static-sv:latest
+    build: 
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_DOMAIN_URL=http://localhost:5000
+
