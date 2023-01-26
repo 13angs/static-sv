@@ -26,10 +26,8 @@ namespace static_sv.Controllers
             string xStaticSig = contextAccessor.HttpContext!
                 .Request.Headers[configuration["Static:Header"]].ToString();
             
-            Console.WriteLine(xStaticSig);
 
             var isValidate = requestValidator.Validate(model, xStaticSig);
-            Console.WriteLine(isValidate.Item2);
             if (!isValidate.Item1)
                 return new StaticResModel
                 {

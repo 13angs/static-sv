@@ -1,4 +1,5 @@
 using Microsoft.Extensions.FileProviders;
+using Newtonsoft.Json.Serialization;
 using static_sv.Interfaces;
 using static_sv.Services;
 
@@ -13,6 +14,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRequestValidator, RequestValidator>();
+
+// configure controller to use Newtonsoft as a default serializer
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft
+            .Json.ReferenceLoopHandling.Ignore)
+                .AddNewtonsoftJson(options => options.SerializerSettings.ContractResolver
+                    = new DefaultContractResolver()
+);
 
 var app = builder.Build();
 
