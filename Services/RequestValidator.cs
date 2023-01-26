@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using Newtonsoft.Json;
+using static_sv.DTOs;
 using static_sv.Interfaces;
 
 namespace static_sv.Services
@@ -15,37 +16,35 @@ namespace static_sv.Services
             this.configuration = configuration;
             this.contextAccessor = contextAccessor;
         }
-        public Tuple<bool, string> Validate(object content, string signature)
+        public Tuple<bool, string> Validate(StaticModel content, string signature)
         {
             // get the x-static-signature header for validation
-            
+
 
             // get static secret id from appsetting.json
             string staticSecret = configuration["Static:Secret"];
-
-            // create a new instance of HMACSHA256
-            var key = Encoding.UTF8.GetBytes(staticSecret);
-            var hmac = new HMACSHA256(key);
-
-            // Compute the HMAC of the request body
-            // the request body need to be string
-            var requestBody = JsonSerializer.Serialize(content);
-            var bodyBytes = Encoding.UTF8.GetBytes(requestBody);
-            var hmacBytes = hmac.ComputeHash(bodyBytes);
-
-            // Compare the computed HMAC to the one sent in the request headers
-            var receivedHmac = Convert.FromBase64String(signature);
-            if (hmacBytes.SequenceEqual(receivedHmac))
-            {
-                // Request is valid
-                Console.WriteLine("Success!");
-                string calSignature = Convert.ToBase64String(hmacBytes);
-                return new (true, calSignature);
-            }
             
-            // Request is not valid
-            Console.WriteLine("Failed!");
-            return new (false, "");
+            // convert secret key to byte array
+            var signKeyBytes = Convert.FromBase64String(staticSecret);
+
+            using (var hmacsha256 = new HMACSHA256(signKeyBytes))
+            {
+                var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new {
+                    type=content.Type,
+                    name=content.Name
+                }));
+
+                var hashResult = hmacsha256.ComputeHash(bytes);
+                var contentSignature = Convert.ToBase64String(hashResult);
+
+                if(signature == contentSignature)
+                {
+                    return new(true, contentSignature);
+                }
+            }
+
+            return new(false, "");
         }
+
     }
 }

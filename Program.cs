@@ -1,72 +1,50 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
-using static_sv.DTOs;
+using Newtonsoft.Json.Serialization;
 using static_sv.Interfaces;
 using static_sv.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-IConfiguration Configuration = builder.Configuration;
 
-builder.Services.AddScoped<IRequestValidator, RequestValidator>();
+// Add services to the container.
+IConfiguration configuration = builder.Configuration;
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IRequestValidator, RequestValidator>();
+
+// configure controller to use Newtonsoft as a default serializer
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft
+            .Json.ReferenceLoopHandling.Ignore)
+                .AddNewtonsoftJson(options => options.SerializerSettings.ContractResolver
+                    = new DefaultContractResolver()
+);
+
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
-
-app.MapPost("/api/v1/statics", ([FromBody] StaticModel model, IHttpContextAccessor contextAccessor, IRequestValidator requestValidator) =>
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
 {
-    string xStaticSig = contextAccessor.HttpContext!
-                .Request.Headers[Configuration["Static:Header"]].ToString();
-    
-    var isValidate = requestValidator.Validate(model, xStaticSig);
-    
-    if(!isValidate.Item1)
-        return new StaticResModel{
-            ErrorCode="ERROR",
-        };
-    // Decode the Base64 encoded image data
-    var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-    // Create a MemoryStream from the image bytes
-    string[] allTypes = model.Type!.Split('/');
-    string staticType = allTypes.ElementAt(0);
+// app.UseHttpsRedirection();
 
+app.UseAuthorization();
 
-    string imgType = allTypes.ElementAt(1);
-
-    if(staticType == "image")
-    {
-        using (var memoryStream = new MemoryStream(imageBytes))
-        {
-            // Create a new unique file name
-            var fileName = $"{Guid.NewGuid().ToString("N")}.{imgType}";
-
-            // Save the image to the server's file system
-            var imagePath = Path.Combine(Configuration["Static:Name"], Configuration["Static:Types:Image"], fileName);
-            System.IO.File.WriteAllBytes(imagePath, memoryStream.ToArray());
-
-            string url = Configuration["ASPNETCORE_DOMAIN_URL"];
-            string imageUrl = Path.Combine(url, imagePath);
-
-            // return Ok(new { imagePath = $"images/{fileName}" });
-            StaticResModel resModel = new StaticResModel{
-                ImageUrl=imageUrl,
-                Signature=isValidate.Item2,
-                ErrorCode="SUCCESS"
-            };
-            return resModel;
-        }
-    }
-
-    throw new Exception("Only support type=image at the moment");
-});
+app.MapControllers();
 
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
-                    Path.Combine(app.Environment.ContentRootPath, Configuration["Static:Name"])
+                    Path.Combine(app.Environment.ContentRootPath, configuration["Static:Name"])
                 ),
-    RequestPath = Configuration["Static:Path"]
+    RequestPath = configuration["Static:Path"]
 });
 
 app.Run();

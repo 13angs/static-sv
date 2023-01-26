@@ -11,4 +11,6 @@ services:
     environment:
       - ASPNETCORE_DOMAIN_URL=${ASPNETCORE_DOMAIN_URL}
       - Static:Secret=${STATIC_SIGNATURE}
+    volumes:
+      - ./wwwroot:/app/wwwroot
 
