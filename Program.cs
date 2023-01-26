@@ -1,11 +1,18 @@
+using Microsoft.Extensions.FileProviders;
+using static_sv.Interfaces;
+using static_sv.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+IConfiguration configuration = builder.Configuration;
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IRequestValidator, RequestValidator>();
 
 var app = builder.Build();
 
@@ -21,5 +28,13 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+                    Path.Combine(app.Environment.ContentRootPath, configuration["Static:Name"])
+                ),
+    RequestPath = configuration["Static:Path"]
+});
 
 app.Run();
