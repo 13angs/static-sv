@@ -30,7 +30,8 @@ namespace static_sv.Services
             using (var hmacsha256 = new HMACSHA256(signKeyBytes))
             {
                 var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new {
-                    type=content.Type
+                    type=content.Type,
+                    name=content.Name
                 }));
 
                 var hashResult = hmacsha256.ComputeHash(bytes);

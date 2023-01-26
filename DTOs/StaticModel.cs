@@ -9,5 +9,8 @@ namespace static_sv.DTOs
 
         [JsonProperty("type")]
         public string? Type { get; set; }
+
+        [JsonProperty("name")]
+        public string? Name { get; set; }
     }
 }

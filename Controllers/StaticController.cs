@@ -48,10 +48,17 @@ namespace static_sv.Controllers
                 using (var memoryStream = new MemoryStream(imageBytes))
                 {
                     // Create a new unique file name
-                    var fileName = $"{Guid.NewGuid().ToString("N")}.{imgType}";
+
+                    DateTime now = DateTime.Now;
+                    string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
+
+                    string fileName = model.Name!.Replace(" ", "-")
+                                    .Replace("--", "-");
+
+                    var fullName = $"{fileName}_{outputDate}.{imgType}";
 
                     // Save the image to the server's file system
-                    var imagePath = Path.Combine(configuration["Static:Name"], configuration["Static:Types:Image"], fileName);
+                    var imagePath = Path.Combine(configuration["Static:Name"], configuration["Static:Types:Image"], fullName);
                     System.IO.File.WriteAllBytes(imagePath, memoryStream.ToArray());
 
                     string url = configuration["ASPNETCORE_DOMAIN_URL"];
