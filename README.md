@@ -17,4 +17,36 @@ STATIC_SIGNATURE=<your_secret> # get this on the internet
 docker compose up
 ```
 
+## To develop the project
+
+
+- build the project
+
+```bash
+dotnet build
+```
+
+- copy and rename `appsetting.json` the `appsetting.Development.json`
+- update the env
+
+```json
+{
+    ...
+    "ASPNETCORE_DOMAIN_URL": "<api_url>",
+    "Static": {
+        ...
+        "Secret": "<secret_key>",
+        ...
+    }
+}
+```
+
+- try running the project
+
+```bash
+dotnet run
+```
+
+- continue developing
+
 
