@@ -1,5 +1,7 @@
 # Staticfile services
 
+[![docker](https://github.com/13angs/static-sv/actions/workflows/build.yml/badge.svg)](https://github.com/13angs/static-sv/actions/workflows/build.yml)
+
 ## Run the project
 
 1. copy and rename .env.sample to copy .env
