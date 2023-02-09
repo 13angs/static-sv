@@ -42,7 +42,7 @@ namespace static_sv.Services
             }
 
             throw new ErrorResponseException(
-                StatusCodes.Status204NoContent,
+                StatusCodes.Status400BadRequest,
                 $"image name: {imageName} doesn't exist",
                 new List<Error>{
                     new Error{
