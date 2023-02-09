@@ -13,26 +13,31 @@ namespace static_sv.Controllers
         private readonly IConfiguration configuration;
         private readonly IHttpContextAccessor contextAccessor;
         private readonly IRequestValidator requestValidator;
+        private readonly IStaticfile _staticSv;
+        private readonly string _xStaticSig;
 
-        public StaticController(IConfiguration configuration, IHttpContextAccessor contextAccessor, IRequestValidator requestValidator)
+        public StaticController(IConfiguration configuration, IHttpContextAccessor contextAccessor, IRequestValidator requestValidator, IStaticfile staticSv)
         {
             this.configuration = configuration;
             this.contextAccessor = contextAccessor;
             this.requestValidator = requestValidator;
+            _staticSv = staticSv;
+
+            _xStaticSig = contextAccessor.HttpContext!
+                .Request.Headers[configuration["Static:Header"]].ToString();
         }
 
         [HttpPost]
         public ActionResult<StaticResModel> CreateImage([FromBody] StaticModel model)
         {
-            string xStaticSig = contextAccessor.HttpContext!
-                .Request.Headers[configuration["Static:Header"]].ToString();
+            
 
             object content = new
             {
                 type = model.Type,
                 name = model.Name
             };
-            var serverSig = requestValidator.Validate(content, xStaticSig);
+            var serverSig = requestValidator.Validate(content, _xStaticSig);
 
             // Decode the Base64 encoded image data
             var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
@@ -81,6 +86,13 @@ namespace static_sv.Controllers
                     $"Available types: {StaticTypes.Image}",
                     new List<Error>()
                 );
+        }
+    
+        [HttpDelete]
+        public async Task<ActionResult> RemoveImage([FromBody] StaticModel model)
+        {
+            await _staticSv.DeleteImage(model.Url!, _xStaticSig);
+            return Ok();
         }
     }
 }

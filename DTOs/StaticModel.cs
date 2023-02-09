@@ -12,5 +12,8 @@ namespace static_sv.DTOs
 
         [JsonProperty("name")]
         public string? Name { get; set; }
+
+        [JsonProperty("url")]
+        public string? Url { get; set; }
     }
 }

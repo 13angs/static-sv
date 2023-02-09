@@ -2,6 +2,6 @@ namespace static_sv.Interfaces
 {
     public interface IStaticfile
     {
-        public void DeleteImage(string url);
+        public Task DeleteImage(string url, string xStaticSig);
     }
 }
