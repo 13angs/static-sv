@@ -1,5 +1,6 @@
 using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Serialization;
+using static_sv.Exceptions;
 using static_sv.Interfaces;
 using static_sv.Services;
 
@@ -14,6 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRequestValidator, RequestValidator>();
+builder.Services.AddScoped<IStaticfile, StaticfileService>();
 
 // configure controller to use Newtonsoft as a default serializer
 builder.Services.AddControllers()
@@ -38,6 +40,8 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseResponseExceptionHandler();
 
 app.UseStaticFiles(new StaticFileOptions
 {
