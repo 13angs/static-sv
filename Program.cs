@@ -1,5 +1,6 @@
 using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Serialization;
+using static_sv.Exceptions;
 using static_sv.Interfaces;
 using static_sv.Services;
 
@@ -38,6 +39,8 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseResponseExceptionHandler();
 
 app.UseStaticFiles(new StaticFileOptions
 {

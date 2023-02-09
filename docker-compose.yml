@@ -10,7 +10,7 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_DOMAIN_URL=${ASPNETCORE_DOMAIN_URL}
-      - Static:Secret=${STATIC_SIGNATURE}
+      - Static:Secret=${STATIC_SECRET}
     volumes:
       - ./wwwroot:/app/wwwroot
 

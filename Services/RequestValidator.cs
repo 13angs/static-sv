@@ -16,7 +16,7 @@ namespace static_sv.Services
             this.configuration = configuration;
             this.contextAccessor = contextAccessor;
         }
-        public Tuple<bool, string> Validate(StaticModel content, string signature)
+        public Tuple<bool, string> Validate(object content, string signature)
         {
             // get the x-static-signature header for validation
 
@@ -29,10 +29,7 @@ namespace static_sv.Services
 
             using (var hmacsha256 = new HMACSHA256(signKeyBytes))
             {
-                var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new {
-                    type=content.Type,
-                    name=content.Name
-                }));
+                var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(content));
 
                 var hashResult = hmacsha256.ComputeHash(bytes);
                 var contentSignature = Convert.ToBase64String(hashResult);
