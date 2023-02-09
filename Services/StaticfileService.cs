@@ -1,4 +1,5 @@
 // using static_sv.DTOs;
+// using static_sv.Exceptions;
 // using static_sv.Interfaces;
 
 // namespace static_sv.Services
@@ -23,10 +24,9 @@
 
 //             var isValidate = _requestValidator.Validate(model, xStaticSig);
 //             if (!isValidate.Item1)
-//                 return new StaticResModel
-//                 {
-//                     ErrorCode = "ERROR",
-//                 };
+//                 throw new ErrorResponseException(
+                    
+//                 );
 //             // Decode the Base64 encoded image data
 //             var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
 

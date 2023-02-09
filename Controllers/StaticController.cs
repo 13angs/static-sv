@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using static_sv.DTOs;
+using static_sv.Exceptions;
 using static_sv.Interfaces;
 
 namespace static_sv.Controllers
@@ -31,12 +32,8 @@ namespace static_sv.Controllers
                 type = model.Type,
                 name = model.Name
             };
-            var isValidate = requestValidator.Validate(content, xStaticSig);
-            if (!isValidate.Item1)
-                return new StaticResModel
-                {
-                    ErrorCode = "ERROR",
-                };
+            var serverSig = requestValidator.Validate(content, xStaticSig);
+
             // Decode the Base64 encoded image data
             var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
 
@@ -47,7 +44,7 @@ namespace static_sv.Controllers
 
             string imgType = allTypes.ElementAt(1);
 
-            if (staticType == "image")
+            if (staticType == StaticTypes.Image)
             {
                 using (var memoryStream = new MemoryStream(imageBytes))
                 {
@@ -72,14 +69,18 @@ namespace static_sv.Controllers
                     StaticResModel resModel = new StaticResModel
                     {
                         ImageUrl = imageUrl,
-                        Signature = isValidate.Item2,
+                        Signature = serverSig,
                         ErrorCode = "SUCCESS"
                     };
                     return resModel;
                 }
             }
 
-            throw new Exception("Only support type=image at the moment");
+            throw new ErrorResponseException(
+                    StatusCodes.Status400BadRequest,
+                    $"Available types: {StaticTypes.Image}",
+                    new List<Error>()
+                );
         }
     }
 }

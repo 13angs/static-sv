@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
-using static_sv.DTOs;
+using static_sv.Exceptions;
 using static_sv.Interfaces;
 
 namespace static_sv.Services
@@ -16,11 +16,8 @@ namespace static_sv.Services
             this.configuration = configuration;
             this.contextAccessor = contextAccessor;
         }
-        public Tuple<bool, string> Validate(object content, string signature)
+        public string Validate(object content, string signature)
         {
-            // get the x-static-signature header for validation
-
-
             // get static secret id from appsetting.json
             string staticSecret = configuration["Static:Secret"];
             
@@ -29,18 +26,36 @@ namespace static_sv.Services
 
             using (var hmacsha256 = new HMACSHA256(signKeyBytes))
             {
-                var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(content));
+                string serverReqBody = JsonConvert.SerializeObject(content);
+                var bytes = Encoding.UTF8.GetBytes(serverReqBody);
 
                 var hashResult = hmacsha256.ComputeHash(bytes);
                 var contentSignature = Convert.ToBase64String(hashResult);
 
                 if(signature == contentSignature)
                 {
-                    return new(true, contentSignature);
+                    return signature;
                 }
-            }
 
-            return new(false, "");
+                throw new ErrorResponseException(
+                    StatusCodes.Status401Unauthorized,
+                    "Invalid signature",
+                    new List<Error>{
+                        new Error{
+                            Field="server_signature",
+                            Message=contentSignature
+                        },
+                        new Error{
+                            Field="client_signature",
+                            Message=signature
+                        },
+                        new Error{
+                            Field="server_req_body",
+                            Message=serverReqBody
+                        }
+                    }
+                );
+            }
         }
 
     }
