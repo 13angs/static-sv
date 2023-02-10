@@ -25,8 +25,14 @@ namespace static_sv.Controllers
                 .Request.Headers[configuration["Static:Header"]].ToString();
         }
 
+        [HttpGet]
+        public ActionResult<IEnumerable<string>> GetImages([FromQuery]StaticQuery queryParams)
+        {
+            return Ok(_staticSv.GetImages(queryParams, _xStaticSig));
+        }
+
         [HttpPost]
-        public async Task<ActionResult<StaticResModel>> CreateImage([FromBody] StaticModel model)
+        public async Task<ActionResult<StaticResModel>> CreateImage([FromBody]StaticModel model)
         {
             return await _staticSv.CreateImage(model, _xStaticSig);
         }

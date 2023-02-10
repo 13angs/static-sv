@@ -17,8 +17,30 @@ namespace static_sv.Services
             _env = env;
         }
 
+        public string GetStaticPath(string type)
+        {
+            if(type.ToLower() == StaticTypeStore.Image)
+            {
+                string contentPath = _env.ContentRootPath;
+                string staticPath = _configuration["Static:Name"];
+                string imagePath = _configuration["Static:Types:Image"];
+                return Path.Combine(contentPath, staticPath, imagePath);
+            }
+            throw new ErrorResponseException(
+                StatusCodes.Status404NotFound,
+                "Static type not found",
+                new List<Error>{
+                    new Error{
+                        Field="type",
+                        Message=$"Available type: {StaticTypeStore.Image}"
+                    }
+                }
+            );
+        }
+
         public async Task<StaticResModel> CreateImage(StaticModel model, string xStaticSig)
         {
+            // vlidate the signature
             object content = new
             {
                 type = model.Type,
@@ -77,22 +99,20 @@ namespace static_sv.Services
 
         public Task DeleteImage(string url, string xStaticSig)
         {
+            // validate the signature
             object deleteContent = new
             {
                 url = url
             };
 
-            // validate the signature
             _requestValidator.Validate(deleteContent, xStaticSig);
             Uri imageUri = new Uri(url);
             string[] segments = imageUri.Segments;
             string imageName = segments.Last().Replace("/", "");
             // get the image name from the url
+            string imagePath = GetStaticPath(StaticTypeStore.Image!);
 
-            string contentPath = _env.ContentRootPath;
-            string staticPath = _configuration["Static:Name"];
-            string imagePath = _configuration["Static:Types:Image"];
-            string fullPath = Path.Combine(contentPath, staticPath, imagePath, imageName);
+            string fullPath = Path.Combine(imagePath, imageName);
 
             if (System.IO.File.Exists(fullPath))
             {
@@ -111,6 +131,42 @@ namespace static_sv.Services
                     new Error{
                         Message=url,
                         Field="url"
+                    }
+                }
+            );
+        }
+
+        public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig)
+        {
+            // validate the signature
+            object deleteContent = new
+            {
+                query = queryParams.query
+            };
+
+            _requestValidator.Validate(deleteContent, xStaticSig);
+            
+            string imageDirPath = GetStaticPath(StaticTypeStore.Image!);
+
+            // get the query else throw
+            if(queryParams.query == StaticQueryStore.All)
+            {
+                string url = _configuration["ASPNETCORE_DOMAIN_URL"];
+                var staticPath = _configuration["Static:Name"];
+                var imagePath = _configuration["Static:Types:Image"];
+
+                string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
+                var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
+                return imageUrls;
+            }
+
+            throw new ErrorResponseException(
+                StatusCodes.Status404NotFound,
+                "Query type not found",
+                new List<Error>{
+                    new Error{
+                        Field="query",
+                        Message=$"Available type: {StaticQueryStore.All}"
                     }
                 }
             );
