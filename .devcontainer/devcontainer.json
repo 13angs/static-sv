@@ -23,7 +23,8 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"jorgeserrano.vscode-csharp-snippets"
+				"jorgeserrano.vscode-csharp-snippets",
+				"kreativ-software.csharpextensions"
 			]
 		}
 	}

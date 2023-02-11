@@ -16,6 +16,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRequestValidator, RequestValidator>();
 builder.Services.AddScoped<IStaticfile, StaticfileService>();
+builder.Services.AddScoped<IStaticDirectory, StaticDirectoryService>();
 
 // configure controller to use Newtonsoft as a default serializer
 builder.Services.AddControllers()
