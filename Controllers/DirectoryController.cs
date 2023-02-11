@@ -21,7 +21,7 @@ namespace static_sv.Controllers
             return _directory.GetDirectories("");
         }
 
-        [HttpGet("{path}")]
+        [HttpGet("{*path}")]
         public ActionResult<StaticDirectoryModel> GetDirectories([FromRoute] string path)
         {
             return _directory.GetDirectories(path);
