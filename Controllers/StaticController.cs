@@ -30,7 +30,7 @@ namespace static_sv.Controllers
         [HttpPost]
         public ActionResult<StaticResModel> CreateImage([FromBody] StaticModel model)
         {
-            
+
 
             object content = new
             {
@@ -46,48 +46,62 @@ namespace static_sv.Controllers
             string[] allTypes = model.Type!.Split('/');
             string staticType = allTypes.ElementAt(0);
 
-
             string imgType = allTypes.ElementAt(1);
+
+            bool isStaticType = !string.IsNullOrEmpty(StaticTypes.AllTypes.FirstOrDefault(x => x == staticType));
+
+            if (!isStaticType)
+                throw new ErrorResponseException(
+                    StatusCodes.Status400BadRequest,
+                    $"{staticType} not Available",
+                    new List<Error>()
+                );
+
+            // Create a new unique file name
+
+            DateTime now = DateTime.Now;
+            string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
+
+            string fileName = model.Name!.Replace(" ", "-")
+                            .Replace("--", "-");
+
+            var fullName = $"{fileName}_{outputDate}.{imgType}";
+            var imagePath = "";
 
             if (staticType == StaticTypes.Image)
             {
-                using (var memoryStream = new MemoryStream(imageBytes))
-                {
-                    // Create a new unique file name
-
-                    DateTime now = DateTime.Now;
-                    string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
-
-                    string fileName = model.Name!.Replace(" ", "-")
-                                    .Replace("--", "-");
-
-                    var fullName = $"{fileName}_{outputDate}.{imgType}";
-
-                    // Save the image to the server's file system
-                    var imagePath = Path.Combine(configuration["Static:Name"], configuration["Static:Types:Image"], fullName);
-                    System.IO.File.WriteAllBytes(imagePath, memoryStream.ToArray());
-
-                    string url = configuration["ASPNETCORE_DOMAIN_URL"];
-                    string imageUrl = Path.Combine(url, imagePath);
-
-                    // return Ok(new { imagePath = $"images/{fileName}" });
-                    StaticResModel resModel = new StaticResModel
-                    {
-                        ImageUrl = imageUrl,
-                        Signature = serverSig,
-                        ErrorCode = "SUCCESS"
-                    };
-                    return resModel;
-                }
+                imagePath = Path.Combine(configuration["Static:Name"], configuration["Static:Types:Image"], fullName);
+            }
+            else if (staticType == StaticTypes.Video)
+            {
+                imagePath = Path.Combine(configuration["Static:Name"], configuration["Static:Types:Video"], fullName);
+            }
+            else
+            {
+                imagePath = Path.Combine(configuration["Static:Name"], configuration["Static:Types:File"], fullName);
             }
 
-            throw new ErrorResponseException(
-                    StatusCodes.Status400BadRequest,
-                    $"Available types: {StaticTypes.Image}",
-                    new List<Error>()
-                );
+
+            using (var memoryStream = new MemoryStream(imageBytes))
+            {
+                // Save the image to the server's file system
+
+                System.IO.File.WriteAllBytes(imagePath, memoryStream.ToArray());
+
+                string url = configuration["ASPNETCORE_DOMAIN_URL"];
+                string imageUrl = Path.Combine(url, imagePath);
+
+                // return Ok(new { imagePath = $"images/{fileName}" });
+                StaticResModel resModel = new StaticResModel
+                {
+                    ImageUrl = imageUrl,
+                    Signature = serverSig,
+                    ErrorCode = "SUCCESS"
+                };
+                return resModel;
+            }
         }
-    
+
         [HttpDelete]
         public async Task<ActionResult> RemoveImage([FromBody] StaticModel model)
         {
