@@ -20,7 +20,7 @@ EXPOSE 5000
 ENV TZ=Asia/Bangkok
 RUN apk update && \
     apk add --no-cache tzdata && \
-    mkdir -p wwwroot/images
+    mkdir -p wwwroot/images wwwroot/videos wwwroot/files 
 COPY --from=dotnet-build /src/publish /app
 
 CMD ["dotnet", "/app/static-sv.dll"]
