@@ -28,6 +28,7 @@ namespace static_sv.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> GetImages([FromQuery]StaticQuery queryParams)
         {
+
             return Ok(_staticSv.GetImages(queryParams, _xStaticSig));
         }
 
@@ -36,7 +37,7 @@ namespace static_sv.Controllers
         {
             return await _staticSv.CreateImage(model, _xStaticSig);
         }
-    
+
         [HttpDelete]
         public async Task<ActionResult> RemoveImage([FromBody] StaticModel model)
         {
