@@ -59,7 +59,8 @@ namespace static_sv.Services
             object content = new
             {
                 type = model.Type,
-                name = model.Name
+                name = model.Name,
+                group = model.Group
             };
             var serverSig = _requestValidator.Validate(content, xStaticSig);
 
@@ -95,25 +96,28 @@ namespace static_sv.Services
 
             if (staticType == StaticTypes.Image)
             {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], fullName);
+                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], model.Group!);
             }
             else if (staticType == StaticTypes.Video)
             {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], fullName);
+                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], model.Group!);
             }
             else
             {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], fullName);
+                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], model.Group!);
             }
 
 
             using (var memoryStream = new MemoryStream(imageBytes))
             {
                 // Save the image to the server's file system
-
-                await System.IO.File.WriteAllBytesAsync(imagePath, memoryStream.ToArray());
+                if(!System.IO.Directory.Exists(imagePath))
+                    System.IO.Directory.CreateDirectory(imagePath);
+                string imageFullPath = Path.Combine(imagePath, fullName);
+                await System.IO.File.WriteAllBytesAsync(imageFullPath, memoryStream.ToArray());
                 string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                string imageUrl = Path.Combine(url, imagePath);
+                string contentApi = _configuration["Static:Api:Content"];
+                string imageUrl = Path.Combine(url, contentApi, fullName);
 
                 // return Ok(new { imagePath = $"images/{fileName}" });
                 StaticResModel resModel = new StaticResModel

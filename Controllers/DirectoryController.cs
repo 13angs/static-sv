@@ -4,7 +4,7 @@ using static_sv.Interfaces;
 
 namespace static_sv.Controllers
 {
-    [Route("api/v1/tree")]
+    [Route("api/v1/statics/tree")]
     [ApiController]
     public class DirectoryController : ControllerBase
     {

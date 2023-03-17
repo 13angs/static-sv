@@ -3,7 +3,7 @@ using static_sv.Interfaces;
 
 namespace static_sv.Controllers
 {
-    [Route("api/v1/contents")]
+    [Route("api/v1/statics/contents")]
     public class ContentController : Controller
     {
         private readonly ILogger<ContentController> _logger;
