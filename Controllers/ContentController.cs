@@ -15,10 +15,11 @@ namespace static_sv.Controllers
             _content = content;
         }
 
-        [HttpGet("{*path}")]
-        public IActionResult Index([FromRoute] string path)
+        // [HttpGet("{*path}")]
+        [HttpGet("{type}/{name}")]
+        public IActionResult Index([FromRoute] string type, [FromRoute] string name)
         {
-            return _content.GetContent(path);
+            return _content.GetContent(type, name);
         }
     }
 }
