@@ -93,18 +93,22 @@ namespace static_sv.Services
 
             var fullName = $"{fileName}_{outputDate}.{imgType}";
             var imagePath = "";
+            string contentApi = _configuration["Static:Api:Content"];
 
             if (staticType == StaticTypes.Image)
             {
                 imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], model.Group!);
+                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Image"]);
             }
             else if (staticType == StaticTypes.Video)
             {
                 imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], model.Group!);
+                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Video"]);
             }
             else
             {
                 imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], model.Group!);
+                contentApi = Path.Combine(contentApi, _configuration["Static:Types:File"]);
             }
 
 
@@ -116,7 +120,6 @@ namespace static_sv.Services
                 string imageFullPath = Path.Combine(imagePath, fullName);
                 await System.IO.File.WriteAllBytesAsync(imageFullPath, memoryStream.ToArray());
                 string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                string contentApi = _configuration["Static:Api:Content"];
                 string imageUrl = Path.Combine(url, contentApi, fullName);
 
                 // return Ok(new { imagePath = $"images/{fileName}" });
@@ -183,40 +186,40 @@ namespace static_sv.Services
             );
         }
 
-        public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig)
-        {
-            // validate the signature
-            object deleteContent = new
-            {
-                query = queryParams.query
-            };
+        // public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig)
+        // {
+        //     // validate the signature
+        //     object deleteContent = new
+        //     {
+        //         query = queryParams.query
+        //     };
 
-            _requestValidator.Validate(deleteContent, xStaticSig);
+        //     _requestValidator.Validate(deleteContent, xStaticSig);
 
-            string imageDirPath = GetStaticPath(StaticTypeStore.Image!);
+        //     string imageDirPath = GetStaticPath(StaticTypeStore.Image!);
 
-            // get the query else throw
-            if (queryParams.query == StaticQueryStore.All)
-            {
-                string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                var staticPath = _configuration["Static:Name"];
-                var imagePath = _configuration["Static:Types:Image"];
+        //     // get the query else throw
+        //     if (queryParams.query == StaticQueryStore.All)
+        //     {
+        //         string url = _configuration["ASPNETCORE_DOMAIN_URL"];
+        //         var staticPath = _configuration["Static:Name"];
+        //         var imagePath = _configuration["Static:Types:Image"];
 
-                string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
-                var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
-                return imageUrls;
-            }
+        //         string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
+        //         var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
+        //         return imageUrls;
+        //     }
 
-            throw new ErrorResponseException(
-                StatusCodes.Status404NotFound,
-                "Query type not found",
-                new List<Error>{
-                    new Error{
-                        Field="query",
-                        Message=$"Available type: {StaticQueryStore.All}"
-                    }
-                }
-            );
-        }
+        //     throw new ErrorResponseException(
+        //         StatusCodes.Status404NotFound,
+        //         "Query type not found",
+        //         new List<Error>{
+        //             new Error{
+        //                 Field="query",
+        //                 Message=$"Available type: {StaticQueryStore.All}"
+        //             }
+        //         }
+        //     );
+        // }
     }
 }
