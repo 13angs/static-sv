@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using static_sv.DTOs;
 using static_sv.Exceptions;
 using static_sv.Interfaces;
@@ -147,12 +148,13 @@ namespace static_sv.Services
             string imageName = segments.Last().Replace("/", "");
             string imgType = "";
             // get the image name from the url
+            Console.WriteLine(JsonConvert.SerializeObject(segments));
 
-            if(segments[2].Split("/")[0] == (_configuration["Static:Types:Image"]))
+            if(segments[5].Split("/")[0] == (_configuration["Static:Types:Image"]))
             {
                 imgType = StaticTypeStore.Image!;
             }
-            else if(segments[2].Split("/")[0] == (_configuration["Static:Types:Video"]))
+            else if(segments[5].Split("/")[0] == (_configuration["Static:Types:Video"]))
             {
                 imgType = StaticTypeStore.Video!;
             }else 
@@ -162,11 +164,30 @@ namespace static_sv.Services
 
             string imagePath = GetStaticPath(imgType!);
 
-            string fullPath = Path.Combine(imagePath, imageName);
+            // string fullPath = Path.Combine(imagePath, imageName);
+            Console.WriteLine(imagePath);
 
-            if (System.IO.File.Exists(fullPath))
+            var files = Directory.GetFiles(imagePath, imageName, SearchOption.AllDirectories);
+
+            if(!files.Any())
             {
-                System.IO.File.Delete(fullPath);
+                throw new ErrorResponseException(
+                    StatusCodes.Status400BadRequest,
+                    $"image name: {imageName} doesn't exist",
+                    new List<Error>{
+                        new Error{
+                            Message=url,
+                            Field="url"
+                        }
+                    }
+                );
+            }
+
+            string imgPath = files[0];
+
+            if (System.IO.File.Exists(imgPath))
+            {
+                System.IO.File.Delete(imgPath);
                 return Task.CompletedTask;
             }
 
@@ -175,7 +196,7 @@ namespace static_sv.Services
                 $"image name: {imageName} doesn't exist",
                 new List<Error>{
                     new Error{
-                        Message=fullPath,
+                        Message=imgPath,
                         Field="full_name"
                     },
                     new Error{
