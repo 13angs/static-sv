@@ -15,5 +15,11 @@ namespace static_sv.DTOs
 
         [JsonProperty("type")]
         public virtual string? Type { get; set; }
+
+        [JsonProperty("url")]
+        public virtual string? Url { get; set; }
+        
+        [JsonProperty("created_date")]
+        public virtual DateTime? CreatedDate { get; set; }
     }
 }

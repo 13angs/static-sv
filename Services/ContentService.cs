@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using static_sv.Interfaces;
 using Microsoft.Net.Http.Headers;
 using static_sv.Exceptions;
+using Newtonsoft.Json;
 
 namespace static_sv.Services
 {
@@ -14,13 +15,25 @@ namespace static_sv.Services
             _env = env;
             _configuration = configuration;
         }
-        public PhysicalFileResult GetContent(string path)
+        public PhysicalFileResult GetContent(string type, string name)
         {
             // Get the file path
-            var filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], path);
+            var typePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], type);
 
             // Check if the file exists
-            if (!System.IO.File.Exists(filePath))
+            string[] files = Directory.GetFiles(typePath, name, SearchOption.AllDirectories);
+
+            if(!files.Any())
+            {
+                throw new ErrorResponseException(
+                    StatusCodes.Status404NotFound,
+                    "File not found",
+                    new List<Error>()
+                );
+            }
+            string file = files[0];
+
+            if (!System.IO.File.Exists(file))
             {
                 throw new ErrorResponseException(
                     StatusCodes.Status404NotFound,
@@ -30,14 +43,14 @@ namespace static_sv.Services
             }
 
             // Get the file extension
-            var extension = Path.GetExtension(filePath);
+            var extension = Path.GetExtension(file);
 
             // Get the content type based on the extension
             var contentType = MediaTypeHeaderValue
                 .Parse(GetMimeType(extension)).ToString();
 
             // Return the image file
-            return PhysicalFile(filePath, contentType);
+            return PhysicalFile(file, contentType);
         }
 
         public string GetMimeType(string extension)

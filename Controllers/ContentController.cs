@@ -3,7 +3,7 @@ using static_sv.Interfaces;
 
 namespace static_sv.Controllers
 {
-    [Route("api/v1/contents")]
+    [Route("api/v1/statics/contents")]
     public class ContentController : Controller
     {
         private readonly ILogger<ContentController> _logger;
@@ -15,10 +15,11 @@ namespace static_sv.Controllers
             _content = content;
         }
 
-        [HttpGet("{*path}")]
-        public IActionResult Index([FromRoute] string path)
+        // [HttpGet("{*path}")]
+        [HttpGet("{type}/{name}")]
+        public IActionResult Index([FromRoute] string type, [FromRoute] string name)
         {
-            return _content.GetContent(path);
+            return _content.GetContent(type, name);
         }
     }
 }

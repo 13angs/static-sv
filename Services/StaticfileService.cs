@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using static_sv.DTOs;
 using static_sv.Exceptions;
 using static_sv.Interfaces;
@@ -59,7 +60,8 @@ namespace static_sv.Services
             object content = new
             {
                 type = model.Type,
-                name = model.Name
+                name = model.Name,
+                group = model.Group
             };
             var serverSig = _requestValidator.Validate(content, xStaticSig);
 
@@ -92,28 +94,34 @@ namespace static_sv.Services
 
             var fullName = $"{fileName}_{outputDate}.{imgType}";
             var imagePath = "";
+            string contentApi = _configuration["Static:Api:Content"];
 
             if (staticType == StaticTypes.Image)
             {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], fullName);
+                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], model.Group!);
+                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Image"]);
             }
             else if (staticType == StaticTypes.Video)
             {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], fullName);
+                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], model.Group!);
+                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Video"]);
             }
             else
             {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], fullName);
+                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], model.Group!);
+                contentApi = Path.Combine(contentApi, _configuration["Static:Types:File"]);
             }
 
 
             using (var memoryStream = new MemoryStream(imageBytes))
             {
                 // Save the image to the server's file system
-
-                await System.IO.File.WriteAllBytesAsync(imagePath, memoryStream.ToArray());
+                if(!System.IO.Directory.Exists(imagePath))
+                    System.IO.Directory.CreateDirectory(imagePath);
+                string imageFullPath = Path.Combine(imagePath, fullName);
+                await System.IO.File.WriteAllBytesAsync(imageFullPath, memoryStream.ToArray());
                 string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                string imageUrl = Path.Combine(url, imagePath);
+                string imageUrl = Path.Combine(url, contentApi, fullName);
 
                 // return Ok(new { imagePath = $"images/{fileName}" });
                 StaticResModel resModel = new StaticResModel
@@ -140,12 +148,13 @@ namespace static_sv.Services
             string imageName = segments.Last().Replace("/", "");
             string imgType = "";
             // get the image name from the url
+            Console.WriteLine(JsonConvert.SerializeObject(segments));
 
-            if(segments[2].Split("/")[0] == (_configuration["Static:Types:Image"]))
+            if(segments[5].Split("/")[0] == (_configuration["Static:Types:Image"]))
             {
                 imgType = StaticTypeStore.Image!;
             }
-            else if(segments[2].Split("/")[0] == (_configuration["Static:Types:Video"]))
+            else if(segments[5].Split("/")[0] == (_configuration["Static:Types:Video"]))
             {
                 imgType = StaticTypeStore.Video!;
             }else 
@@ -155,11 +164,30 @@ namespace static_sv.Services
 
             string imagePath = GetStaticPath(imgType!);
 
-            string fullPath = Path.Combine(imagePath, imageName);
+            // string fullPath = Path.Combine(imagePath, imageName);
+            Console.WriteLine(imagePath);
 
-            if (System.IO.File.Exists(fullPath))
+            var files = Directory.GetFiles(imagePath, imageName, SearchOption.AllDirectories);
+
+            if(!files.Any())
             {
-                System.IO.File.Delete(fullPath);
+                throw new ErrorResponseException(
+                    StatusCodes.Status400BadRequest,
+                    $"image name: {imageName} doesn't exist",
+                    new List<Error>{
+                        new Error{
+                            Message=url,
+                            Field="url"
+                        }
+                    }
+                );
+            }
+
+            string imgPath = files[0];
+
+            if (System.IO.File.Exists(imgPath))
+            {
+                System.IO.File.Delete(imgPath);
                 return Task.CompletedTask;
             }
 
@@ -168,7 +196,7 @@ namespace static_sv.Services
                 $"image name: {imageName} doesn't exist",
                 new List<Error>{
                     new Error{
-                        Message=fullPath,
+                        Message=imgPath,
                         Field="full_name"
                     },
                     new Error{
@@ -179,40 +207,40 @@ namespace static_sv.Services
             );
         }
 
-        public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig)
-        {
-            // validate the signature
-            object deleteContent = new
-            {
-                query = queryParams.query
-            };
+        // public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig)
+        // {
+        //     // validate the signature
+        //     object deleteContent = new
+        //     {
+        //         query = queryParams.query
+        //     };
 
-            _requestValidator.Validate(deleteContent, xStaticSig);
+        //     _requestValidator.Validate(deleteContent, xStaticSig);
 
-            string imageDirPath = GetStaticPath(StaticTypeStore.Image!);
+        //     string imageDirPath = GetStaticPath(StaticTypeStore.Image!);
 
-            // get the query else throw
-            if (queryParams.query == StaticQueryStore.All)
-            {
-                string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                var staticPath = _configuration["Static:Name"];
-                var imagePath = _configuration["Static:Types:Image"];
+        //     // get the query else throw
+        //     if (queryParams.query == StaticQueryStore.All)
+        //     {
+        //         string url = _configuration["ASPNETCORE_DOMAIN_URL"];
+        //         var staticPath = _configuration["Static:Name"];
+        //         var imagePath = _configuration["Static:Types:Image"];
 
-                string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
-                var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
-                return imageUrls;
-            }
+        //         string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
+        //         var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
+        //         return imageUrls;
+        //     }
 
-            throw new ErrorResponseException(
-                StatusCodes.Status404NotFound,
-                "Query type not found",
-                new List<Error>{
-                    new Error{
-                        Field="query",
-                        Message=$"Available type: {StaticQueryStore.All}"
-                    }
-                }
-            );
-        }
+        //     throw new ErrorResponseException(
+        //         StatusCodes.Status404NotFound,
+        //         "Query type not found",
+        //         new List<Error>{
+        //             new Error{
+        //                 Field="query",
+        //                 Message=$"Available type: {StaticQueryStore.All}"
+        //             }
+        //         }
+        //     );
+        // }
     }
 }
