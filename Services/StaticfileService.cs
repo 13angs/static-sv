@@ -18,39 +18,38 @@ namespace static_sv.Services
             _env = env;
         }
 
-        public string GetStaticPath(string type)
+        public string GetStaticPath()
         {
-            if (type.ToLower() == StaticTypeStore.Image)
-            {
-                string contentPath = _env.ContentRootPath;
-                string staticPath = _configuration["Static:Name"];
-                string imagePath = _configuration["Static:Types:Image"];
-                return Path.Combine(contentPath, staticPath, imagePath);
-            }
-            else if (type.ToLower() == StaticTypeStore.Video)
-            {
-                string contentPath = _env.ContentRootPath;
-                string staticPath = _configuration["Static:Name"];
-                string imagePath = _configuration["Static:Types:Video"];
-                return Path.Combine(contentPath, staticPath, imagePath);
-            }
-            else 
-            {
-                string contentPath = _env.ContentRootPath;
-                string staticPath = _configuration["Static:Name"];
-                string imagePath = _configuration["Static:Types:File"];
-                return Path.Combine(contentPath, staticPath, imagePath);
-            }
-            throw new ErrorResponseException(
-                StatusCodes.Status404NotFound,
-                "Static type not found",
-                new List<Error>{
-                    new Error{
-                        Field="type",
-                        Message=$"Available type: {StaticTypeStore.Image}"
-                    }
-                }
-            );
+            string contentPath = _env.ContentRootPath;
+            string staticPath = _configuration["Static:Name"];
+            return Path.Combine(contentPath, staticPath);
+            // if (type.ToLower() == StaticTypeStore.Image)
+            // {
+            // }
+            // else if (type.ToLower() == StaticTypeStore.Video)
+            // {
+            //     string contentPath = _env.ContentRootPath;
+            //     string staticPath = _configuration["Static:Name"];
+            //     string filePath = _configuration["Static:Types:Video"];
+            //     return Path.Combine(contentPath, staticPath, filePath);
+            // }
+            // else 
+            // {
+            //     string contentPath = _env.ContentRootPath;
+            //     string staticPath = _configuration["Static:Name"];
+            //     string filePath = _configuration["Static:Types:File"];
+            //     return Path.Combine(contentPath, staticPath, filePath);
+            // }
+            // throw new ErrorResponseException(
+            //     StatusCodes.Status404NotFound,
+            //     "Static type not found",
+            //     new List<Error>{
+            //         new Error{
+            //             Field="type",
+            //             Message=$"Available type: {StaticTypeStore.Image}"
+            //         }
+            //     }
+            // );
         }
 
         public async Task<StaticResModel> CreateImage(StaticModel model, string xStaticSig)
@@ -94,40 +93,40 @@ namespace static_sv.Services
                             .Replace("--", "-");
 
             var fullName = $"{fileName}_{outputDate}.{imgType}";
-            var imagePath = "";
+            var filePath = GetStaticPath();
+            filePath = Path.Combine(filePath, model.Group!);
             string contentApi = _configuration["Static:Api:Content"];
 
-            if (staticType == StaticTypes.Image)
-            {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], model.Group!);
-                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Image"]);
-            }
-            else if (staticType == StaticTypes.Video)
-            {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], model.Group!);
-                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Video"]);
-            }
-            else
-            {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], model.Group!);
-                contentApi = Path.Combine(contentApi, _configuration["Static:Types:File"]);
-            }
+            // if (staticType == StaticTypes.Image)
+            // {
+            //     contentApi = Path.Combine(contentApi, _configuration["Static:Types:Image"]);
+            // }
+            // else if (staticType == StaticTypes.Video)
+            // {
+            //     filePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], model.Group!);
+            //     contentApi = Path.Combine(contentApi, _configuration["Static:Types:Video"]);
+            // }
+            // else
+            // {
+            //     filePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], model.Group!);
+            //     contentApi = Path.Combine(contentApi, _configuration["Static:Types:File"]);
+            // }
 
 
             using (var memoryStream = new MemoryStream(imageBytes))
             {
                 // Save the image to the server's file system
-                if(!System.IO.Directory.Exists(imagePath))
-                    System.IO.Directory.CreateDirectory(imagePath);
-                string imageFullPath = Path.Combine(imagePath, fullName);
-                await System.IO.File.WriteAllBytesAsync(imageFullPath, memoryStream.ToArray());
+                if(!System.IO.Directory.Exists(filePath))
+                    System.IO.Directory.CreateDirectory(filePath);
+                string fileFullPath = Path.Combine(filePath, fullName);
+                await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
                 string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                string imageUrl = Path.Combine(url, contentApi, fullName);
+                string fileUrl = Path.Combine(url, contentApi, fullName);
 
-                // return Ok(new { imagePath = $"images/{fileName}" });
+                // return Ok(new { filePath = $"images/{fileName}" });
                 StaticResModel resModel = new StaticResModel
                 {
-                    FileUrl = imageUrl,
+                    FileUrl = fileUrl,
                     Signature = serverSig,
                     ErrorCode = "SUCCESS"
                 };
@@ -136,7 +135,7 @@ namespace static_sv.Services
                 {
                     var prevBytes = Convert.FromBase64String(model.PreviewFile!);
                     var previewName = $"{fileName}_{outputDate}.png";
-                    string previewPath = Path.Combine(imagePath, previewName);
+                    string previewPath = Path.Combine(filePath, previewName);
                     using(var prevStream = new MemoryStream(prevBytes))
                     {
                         await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
@@ -161,28 +160,28 @@ namespace static_sv.Services
             Uri imageUri = new Uri(url);
             string[] segments = imageUri.Segments;
             string imageName = segments.Last().Replace("/", "");
-            string imgType = "";
+            // string imgType = "";
             // get the image name from the url
-            Console.WriteLine(JsonConvert.SerializeObject(segments));
+            // Console.WriteLine(JsonConvert.SerializeObject(segments));
 
-            if(segments[5].Split("/")[0] == (_configuration["Static:Types:Image"]))
-            {
-                imgType = StaticTypeStore.Image!;
-            }
-            else if(segments[5].Split("/")[0] == (_configuration["Static:Types:Video"]))
-            {
-                imgType = StaticTypeStore.Video!;
-            }else 
-            {
-                imgType = StaticTypeStore.File!;
-            }
+            // if(segments[5].Split("/")[0] == (_configuration["Static:Types:Image"]))
+            // {
+            //     imgType = StaticTypeStore.Image!;
+            // }
+            // else if(segments[5].Split("/")[0] == (_configuration["Static:Types:Video"]))
+            // {
+            //     imgType = StaticTypeStore.Video!;
+            // }else 
+            // {
+            //     imgType = StaticTypeStore.File!;
+            // }
 
-            string imagePath = GetStaticPath(imgType!);
+            string filePath = GetStaticPath();
 
-            // string fullPath = Path.Combine(imagePath, imageName);
-            Console.WriteLine(imagePath);
+            // string fullPath = Path.Combine(filePath, imageName);
+            // Console.WriteLine(filePath);
 
-            var files = Directory.GetFiles(imagePath, imageName, SearchOption.AllDirectories);
+            var files = Directory.GetFiles(filePath, imageName, SearchOption.AllDirectories);
 
             if(!files.Any())
             {
@@ -239,11 +238,11 @@ namespace static_sv.Services
         //     {
         //         string url = _configuration["ASPNETCORE_DOMAIN_URL"];
         //         var staticPath = _configuration["Static:Name"];
-        //         var imagePath = _configuration["Static:Types:Image"];
+        //         var filePath = _configuration["Static:Types:Image"];
 
         //         string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
-        //         var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
-        //         return imageUrls;
+        //         var fileUrls = entries.Select(e => Path.Combine(url, staticPath, filePath, e.Split("/").Last()));
+        //         return fileUrls;
         //     }
 
         //     throw new ErrorResponseException(

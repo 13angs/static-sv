@@ -53,7 +53,7 @@ namespace static_sv.Services
             }
 
             var root = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
-            string dirPath = Path.Combine(root, staticQuery.Type!, staticQuery.GroupId!);
+            string dirPath = Path.Combine(root, staticQuery.GroupId!);
             var directory = new DirectoryInfo(dirPath);
             var subdirectories = directory.GetDirectories();
 
@@ -84,7 +84,7 @@ namespace static_sv.Services
                             Extension=d.Extension,
                             Type=staticQuery.Type,
                             CreatedDate=DateTime.ParseExact(d.Name.Split("_")[1].Split(".")[0], "yyyy-MM-dd", CultureInfo.InvariantCulture),
-                            Url=Path.Combine(_configuration["ASPNETCORE_DOMAIN_URL"], _configuration["Static:Api:Content"], staticQuery.Type!, d.Name)
+                            Url=Path.Combine(_configuration["ASPNETCORE_DOMAIN_URL"], _configuration["Static:Api:Content"], d.Name)
                         }
                     ).ToList()
             };

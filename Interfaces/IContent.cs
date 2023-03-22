@@ -4,7 +4,7 @@ namespace static_sv.Interfaces
 {
     public interface IContent
     {
-        public PhysicalFileResult GetContent(string type, string name);
+        public PhysicalFileResult GetContent(string name);
         public string GetMimeType(string extension);
     }
 }

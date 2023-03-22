@@ -7,6 +7,6 @@ namespace static_sv.Interfaces
         public Task<StaticResModel> CreateImage(StaticModel model, string xStaticSig);
         public Task DeleteImage(string url, string xStaticSig);
         // public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig);
-        public string GetStaticPath(string type);
+        public string GetStaticPath();
     }
 }
