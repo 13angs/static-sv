@@ -61,7 +61,8 @@ namespace static_sv.Services
             {
                 type = model.Type,
                 name = model.Name,
-                group = model.Group
+                group = model.Group,
+                add_preview_url = model.AddPreviewUrl
             };
             var serverSig = _requestValidator.Validate(content, xStaticSig);
 
@@ -126,10 +127,24 @@ namespace static_sv.Services
                 // return Ok(new { imagePath = $"images/{fileName}" });
                 StaticResModel resModel = new StaticResModel
                 {
-                    ImageUrl = imageUrl,
+                    FileUrl = imageUrl,
                     Signature = serverSig,
                     ErrorCode = "SUCCESS"
                 };
+
+                if(model.AddPreviewUrl)
+                {
+                    var prevBytes = Convert.FromBase64String(model.PreviewFile!);
+                    var previewName = $"{fileName}_{outputDate}.png";
+                    string previewPath = Path.Combine(imagePath, previewName);
+                    using(var prevStream = new MemoryStream(prevBytes))
+                    {
+                        await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
+                    }
+
+                    string prevUrl = Path.Combine(url, contentApi, previewName);
+                    resModel.PreviewUrl=prevUrl;
+                }
                 return resModel;
             }
         }
