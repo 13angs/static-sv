@@ -5,6 +5,11 @@ namespace static_sv.Models
 {
     public class BaseEntity
     {
+        public BaseEntity()
+        {
+            CreatedDate=DateTime.Now;
+            ModifiedDate=DateTime.Now;
+        }
         [Column("created_date")]
         [JsonProperty("created_date")]
         public virtual DateTime CreatedDate { get; set; }

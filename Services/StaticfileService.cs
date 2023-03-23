@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using static_sv.DTOs;
 using static_sv.Exceptions;
 using static_sv.Interfaces;
+using static_sv.Models;
 
 namespace static_sv.Services
 {
@@ -10,12 +11,14 @@ namespace static_sv.Services
         private readonly IConfiguration _configuration;
         private readonly IRequestValidator _requestValidator;
         private readonly IHostEnvironment _env;
+        private readonly IFolder _folder;
 
-        public StaticfileService(IConfiguration configuration, IRequestValidator requestValidator, IHostEnvironment env)
+        public StaticfileService(IConfiguration configuration, IRequestValidator requestValidator, IHostEnvironment env, IFolder folder)
         {
             _configuration = configuration;
             _requestValidator = requestValidator;
             _env = env;
+            _folder = folder;
         }
 
         public string GetStaticPath()
@@ -117,7 +120,12 @@ namespace static_sv.Services
             {
                 // Save the image to the server's file system
                 if(!System.IO.Directory.Exists(filePath))
+                {
                     System.IO.Directory.CreateDirectory(filePath);
+                    await _folder.CreateFolder(new Folder{
+                        Path=model.Folder
+                    });                    
+                }
                 string fileFullPath = Path.Combine(filePath, fullName);
                 await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
                 string url = _configuration["ASPNETCORE_DOMAIN_URL"];
