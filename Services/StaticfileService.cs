@@ -221,10 +221,12 @@ namespace static_sv.Services
         {
             IEnumerable<Staticfile> staticfiles = new List<Staticfile>();
 
-            if(query.Type == StaticfileQueryStore.Folder)
+            if(query.Is == StaticfileQueryStore.Folder)
             {
                 return staticfiles=_context.Staticfiles
-                    .Where(s => s.FolderId == query.FolderId)
+                    .Where(s => s.FolderId == query.FolderId && 
+                        (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true))
+                    .Take(query.Limit)
                     .AsNoTracking();
             }
 

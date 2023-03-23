@@ -61,10 +61,11 @@ namespace static_sv.Services
         {
             IEnumerable<Folder> folders = new List<Folder>();
  
-            if(query.Type == FolderQueryStore.SubFolder)       
+            if(query.Is == FolderQueryStore.SubFolder)       
             {
                 return _context.Folders
-                    .Where(f => f.ParentFolderId == query.FolderId);
+                    .Where(f => f.ParentFolderId == query.FolderId)
+                    .AsNoTracking();
             }     
 
             throw new ErrorResponseException(

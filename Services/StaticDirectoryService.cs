@@ -60,7 +60,7 @@ namespace static_sv.Services
 
             // get the nested/sub folders
             FolderQuery folderQuery = new FolderQuery{
-                Type=FolderQueryStore.SubFolder,
+                Is=FolderQueryStore.SubFolder,
                 FolderId=folder.FolderId
             };
             var subFolders = _folder.GetFolders(folderQuery);
@@ -71,8 +71,10 @@ namespace static_sv.Services
 
             // get all the files
             StaticfileQuery staticfileQuery = new StaticfileQuery{
-                Type=StaticfileQueryStore.Folder,
-                FolderId=folder.FolderId
+                Is=StaticfileQueryStore.Folder,
+                FolderId=folder.FolderId,
+                Type=staticQuery.Type,
+                Limit=staticQuery.Limit
             };
             var staticfiles = _static.GetStaticfiles(staticfileQuery);
             // var subdirectories = directory.GetDirectories();
