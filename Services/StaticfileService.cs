@@ -60,7 +60,7 @@ namespace static_sv.Services
             {
                 type = model.Type,
                 name = model.Name,
-                group = model.Group,
+                folder = model.Folder,
                 add_preview_url = model.AddPreviewUrl
             };
             var serverSig = _requestValidator.Validate(content, xStaticSig);
@@ -94,7 +94,7 @@ namespace static_sv.Services
 
             var fullName = $"{fileName}_{outputDate}.{imgType}";
             var filePath = GetStaticPath();
-            filePath = Path.Combine(filePath, model.Group!);
+            filePath = Path.Combine(filePath, model.Folder!);
             string contentApi = _configuration["Static:Api:Content"];
 
             // if (staticType == StaticTypes.Image)
