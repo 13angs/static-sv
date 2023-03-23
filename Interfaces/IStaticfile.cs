@@ -1,4 +1,5 @@
 using static_sv.DTOs;
+using static_sv.Models;
 
 namespace static_sv.Interfaces
 {
@@ -8,5 +9,6 @@ namespace static_sv.Interfaces
         public Task DeleteImage(string url, string xStaticSig);
         // public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig);
         public string GetStaticPath();
+        public IEnumerable<Staticfile> GetStaticfiles(StaticfileQuery query);
     }
 }

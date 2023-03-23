@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using static_sv.DTOs;
 using static_sv.Exceptions;
@@ -214,6 +215,25 @@ namespace static_sv.Services
                     }
                 }
             );
+        }
+
+        public IEnumerable<Staticfile> GetStaticfiles(StaticfileQuery query)
+        {
+            IEnumerable<Staticfile> staticfiles = new List<Staticfile>();
+
+            if(query.Type == StaticfileQueryStore.Folder)
+            {
+                return staticfiles=_context.Staticfiles
+                    .Where(s => s.FolderId == query.FolderId)
+                    .AsNoTracking();
+            }
+
+            throw new ErrorResponseException(
+                StatusCodes.Status501NotImplemented,
+                $"Type not implement",
+                new List<Error>{}
+            );
+
         }
     }
 }

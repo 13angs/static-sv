@@ -39,8 +39,8 @@ namespace static_sv.Models
         [JsonProperty("sub_folders")]
         public virtual List<Folder> SubFolders { get; set; }
 
-        [Column("sub_folders")]
-        [JsonProperty("sub_folders")]
+        [Column("staticfiles")]
+        [JsonProperty("staticfiles")]
         public virtual List<Staticfile> Staticfiles { get; set; }
     }
 }

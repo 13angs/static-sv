@@ -11,7 +11,7 @@ using static_sv.Models;
 namespace static_sv.Migrations
 {
     [DbContext(typeof(StaticContext))]
-    [Migration("20230323071408_init-db")]
+    [Migration("20230323081445_init-db")]
     partial class initdb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

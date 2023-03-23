@@ -28,10 +28,10 @@ namespace static_sv.Controllers
         //     return _directory.GetDirectories("");
         // }
 
-        [HttpGet]
-        public ActionResult<StaticDirectoryModel> GetDirectories([FromQuery] string query)
+        [HttpGet("{*path}")]
+        public async Task<ActionResult<StaticDirectoryModel>> GetDirectories([FromRoute] string path, [FromQuery] string query)
         {
-            return _directory.GetDirectories(query, _signature);
+            return await _directory.GetDirectories(path, query, _signature);
         }
 
         [HttpDelete]

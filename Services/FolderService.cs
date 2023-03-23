@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using static_sv.DTOs;
 using static_sv.Exceptions;
 using static_sv.Interfaces;
 using static_sv.Models;
+using static_sv.Stores;
 
 namespace static_sv.Services
 {
@@ -41,6 +43,37 @@ namespace static_sv.Services
             );
         }
 
+        public async Task<Folder> GetFolder(string path)
+        {
+            Folder? folder = await _context.Folders
+                .FirstOrDefaultAsync(f => f.Path == path);
+
+            if(folder == null)
+                throw new ErrorResponseException(
+                  StatusCodes.Status404NotFound,
+                    $"Folder with path {path}",
+                    new List<Error>()
+                );
+            return folder;
+        }
+
+        public IEnumerable<Folder> GetFolders(FolderQuery query)
+        {
+            IEnumerable<Folder> folders = new List<Folder>();
+ 
+            if(query.Type == FolderQueryStore.SubFolder)       
+            {
+                return _context.Folders
+                    .Where(f => f.ParentFolderId == query.FolderId);
+            }     
+
+            throw new ErrorResponseException(
+                StatusCodes.Status501NotImplemented,
+                "Type not implement",
+                new List<Error>()
+            );
+        }
+
         public async Task RemoveFolder(long folderId)
         {
             Folder? folder = await _context.Folders.FirstOrDefaultAsync(f => f.FolderId == folderId);
@@ -60,6 +93,25 @@ namespace static_sv.Services
                     "Folder not exist in server",
                 new List<Error>()
             );
+
+            // remove all the files
+            IEnumerable<Staticfile> staticfiles = _context.Staticfiles
+                .Where(s => s.FolderId == folder.FolderId);
+            
+            if(staticfiles.Any())
+            {
+                _context.Staticfiles.RemoveRange(staticfiles);
+            }
+
+            // remove the sub folders
+
+            IEnumerable<Folder> subFolders = _context.Folders
+                .Where(f => f.ParentFolderId == folder.FolderId);
+            
+            if(subFolders.Any())
+            {
+                _context.Folders.RemoveRange(subFolders);
+            }
 
             _context.Folders.Remove(folder);
             int result = await _context.SaveChangesAsync();
