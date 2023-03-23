@@ -9,6 +9,7 @@ namespace static_sv.Models
         public Folder()
         {
             SubFolders=new List<Folder>();
+            Staticfiles=new List<Staticfile>();
         }
         [Key]
         [Required]
@@ -37,5 +38,9 @@ namespace static_sv.Models
         [Column("sub_folders")]
         [JsonProperty("sub_folders")]
         public virtual List<Folder> SubFolders { get; set; }
+
+        [Column("sub_folders")]
+        [JsonProperty("sub_folders")]
+        public virtual List<Staticfile> Staticfiles { get; set; }
     }
 }

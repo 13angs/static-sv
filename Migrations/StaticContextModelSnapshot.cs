@@ -108,7 +108,7 @@ namespace static_sv.Migrations
             modelBuilder.Entity("static_sv.Models.Staticfile", b =>
                 {
                     b.HasOne("static_sv.Models.Folder", "Folder")
-                        .WithMany()
+                        .WithMany("Staticfiles")
                         .HasForeignKey("FolderId");
 
                     b.Navigation("Folder");
@@ -116,6 +116,8 @@ namespace static_sv.Migrations
 
             modelBuilder.Entity("static_sv.Models.Folder", b =>
                 {
+                    b.Navigation("Staticfiles");
+
                     b.Navigation("SubFolders");
                 });
 #pragma warning restore 612, 618

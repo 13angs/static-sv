@@ -4,7 +4,7 @@ namespace static_sv.Interfaces
 {
     public interface IFolder
     {
-        public Task CreateFolder(Folder folder);
+        public Task<Folder> CreateFolder(Folder folder);
         public Task RemoveFolder(long folderId);
     }
 }

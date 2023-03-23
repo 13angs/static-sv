@@ -16,7 +16,7 @@ namespace static_sv.Services
             _context = context;
             _configuration = configuration;
         }
-        public async Task CreateFolder(Folder folder)
+        public async Task<Folder> CreateFolder(Folder folder)
         {
             // check if folder exist
             Folder? existing = await _context.Folders
@@ -25,14 +25,14 @@ namespace static_sv.Services
             if(existing != null)
             {
                 _logger.LogInformation($"Folder with path {folder.Path} exist!");
-                return;
+                return existing;
             }
             
             await _context.Folders.AddAsync(folder);
             int result = await _context.SaveChangesAsync();
 
             if(result > 0)
-                return;
+                return folder;
             
             throw new ErrorResponseException(
                 StatusCodes.Status500InternalServerError,

@@ -11,7 +11,7 @@ using static_sv.Models;
 namespace static_sv.Migrations
 {
     [DbContext(typeof(StaticContext))]
-    [Migration("20230323035959_init-db")]
+    [Migration("20230323071408_init-db")]
     partial class initdb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -110,7 +110,7 @@ namespace static_sv.Migrations
             modelBuilder.Entity("static_sv.Models.Staticfile", b =>
                 {
                     b.HasOne("static_sv.Models.Folder", "Folder")
-                        .WithMany()
+                        .WithMany("Staticfiles")
                         .HasForeignKey("FolderId");
 
                     b.Navigation("Folder");
@@ -118,6 +118,8 @@ namespace static_sv.Migrations
 
             modelBuilder.Entity("static_sv.Models.Folder", b =>
                 {
+                    b.Navigation("Staticfiles");
+
                     b.Navigation("SubFolders");
                 });
 #pragma warning restore 612, 618
