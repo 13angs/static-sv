@@ -84,6 +84,10 @@ namespace static_sv.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("size");
 
+                    b.Property<long>("Timestamp")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("timestamp");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("TEXT")

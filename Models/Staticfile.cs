@@ -39,5 +39,9 @@ namespace static_sv.Models
         [Column("folder")]
         [JsonProperty("folder")]
         public virtual Folder? Folder { get; set; }
+
+        [Column("timestamp")]
+        [JsonProperty("timestamp")]
+        public virtual long Timestamp { get; set; }
     }
 }

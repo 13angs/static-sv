@@ -11,7 +11,7 @@ using static_sv.Models;
 namespace static_sv.Migrations
 {
     [DbContext(typeof(StaticContext))]
-    [Migration("20230323081445_init-db")]
+    [Migration("20230323161010_init-db")]
     partial class initdb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -85,6 +85,10 @@ namespace static_sv.Migrations
                     b.Property<long>("Size")
                         .HasColumnType("INTEGER")
                         .HasColumnName("size");
+
+                    b.Property<long>("Timestamp")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("timestamp");
 
                     b.Property<string>("Type")
                         .IsRequired()

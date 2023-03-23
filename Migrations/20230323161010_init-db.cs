@@ -42,6 +42,7 @@ namespace static_sv.Migrations
                     type = table.Column<string>(type: "TEXT", nullable: false),
                     size = table.Column<long>(type: "INTEGER", nullable: false),
                     folder_id = table.Column<long>(type: "INTEGER", nullable: true),
+                    timestamp = table.Column<long>(type: "INTEGER", nullable: false),
                     created_date = table.Column<DateTime>(type: "TEXT", nullable: false),
                     modified_date = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },

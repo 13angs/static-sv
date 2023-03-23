@@ -14,14 +14,16 @@ namespace static_sv.Services
         private readonly IHostEnvironment _env;
         private readonly IFolder _folder;
         private readonly StaticContext _context;
+        private readonly ILogger<StaticfileService> _logger;
 
-        public StaticfileService(IConfiguration configuration, IRequestValidator requestValidator, IHostEnvironment env, IFolder folder, StaticContext context)
+        public StaticfileService(IConfiguration configuration, IRequestValidator requestValidator, IHostEnvironment env, IFolder folder, StaticContext context, ILogger<StaticfileService> logger)
         {
             _configuration = configuration;
             _requestValidator = requestValidator;
             _env = env;
             _folder = folder;
             _context = context;
+            _logger = logger;
         }
 
         public string GetStaticPath()
@@ -66,7 +68,7 @@ namespace static_sv.Services
             // Create a new unique file name
 
             DateTime now = DateTime.Now;
-            string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
+            // string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
 
             string fileName = model.Name!.Replace(" ", "-")
                             .Replace("--", "-");
@@ -86,7 +88,8 @@ namespace static_sv.Services
                 {
                     System.IO.Directory.CreateDirectory(filePath);
                 }
-                var fullName = $"{fileName}_{outputDate}.{fileType}";
+                long fileTs = DateConverter.ToTimestamp(now);
+                var fullName = $"{fileName}_{fileTs}.{fileType}";
                 string fileFullPath = Path.Combine(filePath, fullName);
                 await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
 
@@ -95,7 +98,8 @@ namespace static_sv.Services
                     FolderId=folder.FolderId,
                     Path=Path.Combine(model.Folder!, fullName),
                     Type=model.Type,
-                    Size=memoryStream.Length
+                    Size=memoryStream.Length,
+                    Timestamp=fileTs
                 };
 
                 await _context.Staticfiles.AddAsync(staticfile);
@@ -125,7 +129,9 @@ namespace static_sv.Services
                 if(model.AddPreviewUrl)
                 {
                     var prevBytes = Convert.FromBase64String(model.PreviewFile!);
-                    var previewName = $"{fileName}_{outputDate}.png";
+                    now = DateTime.Now;
+                    long prevTs = DateConverter.ToTimestamp(now);
+                    var previewName = $"{fileName}_{prevTs}.png";
                     string previewPath = Path.Combine(filePath, previewName);
                     using(var prevStream = new MemoryStream(prevBytes))
                     {
@@ -135,7 +141,8 @@ namespace static_sv.Services
                             FolderId=folder.FolderId,
                             Path=Path.Combine(model.Folder!, previewName),
                             Type="image/png",
-                            Size=prevStream.Length
+                            Size=prevStream.Length,
+                            Timestamp=prevTs
                         };
 
                         await _context.Staticfiles.AddAsync(staticfile);
@@ -159,7 +166,7 @@ namespace static_sv.Services
             }
         }
 
-        public Task DeleteImage(string url, string xStaticSig)
+        public async Task DeleteImage(string url, string xStaticSig)
         {
             // validate the signature
             object deleteContent = new
@@ -172,33 +179,50 @@ namespace static_sv.Services
             string[] segments = imageUri.Segments;
             string imageName = segments.Last().Replace("/", "");
 
-            string filePath = GetStaticPath();
+            // string filePath = GetStaticPath();
+            long timestamp;
+            string strTs = imageName.Split("_")[1].Split(".")[0];
+            Int64.TryParse(strTs, out timestamp);
 
             // string fullPath = Path.Combine(filePath, imageName);
             // Console.WriteLine(filePath);
+            StaticfileQuery staticQuery = new StaticfileQuery{
+                Is=StaticfileQueryStore.Staticfile,
+                Timestamp=timestamp
+            };
 
-            var files = Directory.GetFiles(filePath, imageName, SearchOption.AllDirectories);
+            var staticfiles = GetStaticfiles(staticQuery);
+            Staticfile? staticfile = new Staticfile();
+            string filePath = String.Empty;
 
-            if(!files.Any())
+            if(staticfiles.Any())
             {
-                throw new ErrorResponseException(
-                    StatusCodes.Status400BadRequest,
-                    $"image name: {imageName} doesn't exist",
-                    new List<Error>{
-                        new Error{
-                            Message=url,
-                            Field="url"
+                // Console.WriteLine("getting files");
+                // return Task.CompletedTask;
+                staticfile=staticfiles.FirstOrDefault();
+                filePath = Path.Combine(_configuration["Static:Name"], staticfile!.Path!);
+
+                if(!System.IO.File.Exists(filePath))
+                {
+                    _logger.LogWarning("File doesn't exist. Deleting from db...");
+                    _context.Staticfiles.Remove(staticfile);
+                    await _context.SaveChangesAsync();
+                    throw new ErrorResponseException(
+                        StatusCodes.Status400BadRequest,
+                        $"image name: {imageName} doesn't exist",
+                        new List<Error>{
+                            new Error{
+                                Message=url,
+                                Field="url"
+                            }
                         }
-                    }
-                );
-            }
+                    );
+                }
 
-            string imgPath = files[0];
+                System.IO.File.Delete(filePath);
 
-            if (System.IO.File.Exists(imgPath))
-            {
-                System.IO.File.Delete(imgPath);
-                return Task.CompletedTask;
+                _context.Staticfiles.Remove(staticfile);
+                await _context.SaveChangesAsync();
             }
 
             throw new ErrorResponseException(
@@ -206,15 +230,42 @@ namespace static_sv.Services
                 $"image name: {imageName} doesn't exist",
                 new List<Error>{
                     new Error{
-                        Message=imgPath,
-                        Field="full_name"
-                    },
-                    new Error{
                         Message=url,
                         Field="url"
                     }
                 }
             );
+            // var files = Directory.GetFiles(filePath, imageName, SearchOption.AllDirectories);
+
+
+
+            // if(!files.Any())
+            // {
+            // }
+
+            
+
+            // return Task.CompletedTask;
+            // string imgPath = files[0];
+
+            // if (System.IO.File.Exists(imgPath))
+            // {
+            // }
+
+            // throw new ErrorResponseException(
+            //     StatusCodes.Status400BadRequest,
+            //     $"image name: {imageName} doesn't exist",
+            //     new List<Error>{
+            //         new Error{
+            //             Message=imgPath,
+            //             Field="full_name"
+            //         },
+            //         new Error{
+            //             Message=url,
+            //             Field="url"
+            //         }
+            //     }
+            // );
         }
 
         public IEnumerable<Staticfile> GetStaticfiles(StaticfileQuery query)
@@ -228,6 +279,27 @@ namespace static_sv.Services
                         (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true))
                     .Take(query.Limit)
                     .AsNoTracking();
+            }
+
+            if(query.Is == StaticfileQueryStore.Staticfile)
+            {
+                return staticfiles=_context.Staticfiles
+                    .Where(f => f.StaticfileId == query.StaticfileId ||
+                        f.Timestamp == query.Timestamp)
+                    .AsNoTracking();
+                
+                // foreach(Staticfile s in staticfiles)
+                // {
+                //     long dbTs = DateConverter.ToTimestamp(s.CreatedDate);
+                //     Console.WriteLine($"s: {dbTs} - q; {query.Timestamp}");
+                //     if(dbTs == query.Timestamp)
+                //     {
+                //         var result = new List<Staticfile>();
+                //         result.Add(s);
+                //         return result;
+                //     }
+                // }
+                
             }
 
             throw new ErrorResponseException(

@@ -102,6 +102,7 @@ namespace static_sv.Services
                     Type=s.Type,
                     Size=s.Size,
                     FolderId=s.FolderId,
+                    Timestamp=s.Timestamp,
                     Url=Path.Combine(_configuration["ASPNETCORE_DOMAIN_URL"], _configuration["Static:Api:Content"], s.Name!)
                 });
             }
