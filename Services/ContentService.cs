@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using static_sv.Interfaces;
 using Microsoft.Net.Http.Headers;
 using static_sv.Exceptions;
-using Newtonsoft.Json;
 
 namespace static_sv.Services
 {

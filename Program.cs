@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json.Serialization;
 using static_sv.Exceptions;
 using static_sv.Interfaces;
+using static_sv.Models;
 using static_sv.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,13 @@ builder.Services.AddControllers()
                 .AddNewtonsoftJson(options => options.SerializerSettings.ContractResolver
                     = new DefaultContractResolver()
 );
+
+builder.Services.AddDbContextPool<StaticContext>(option => {
+    var env = builder.Environment;
+    string conStr = Path.Combine(env.ContentRootPath, configuration["SqliteDb:Path"], configuration["SqliteDb:Name"]);
+    Console.WriteLine(conStr);
+    option.UseSqlite($"Data Source={conStr}");
+});
 
 var app = builder.Build();
 
