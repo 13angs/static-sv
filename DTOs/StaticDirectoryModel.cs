@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using static_sv.Models;
 
 namespace static_sv.DTOs
 {
@@ -6,14 +7,14 @@ namespace static_sv.DTOs
     {
         public StaticDirectoryModel()
         {
-            Directories=new List<DirectoryModel>();
-            Files=new List<FileModel>();
+            Folders=new List<Folder>();
+            Staticfiles=new List<StaticfileModel>();
         }
 
-        [JsonProperty("directories")]
-        public virtual List<DirectoryModel> Directories { get; set; }
+        [JsonProperty("folders")]
+        public virtual List<Folder> Folders { get; set; }
 
-        [JsonProperty("files")]
-        public virtual List<FileModel> Files { get; set; }
+        [JsonProperty("staticfiles")]
+        public virtual List<StaticfileModel> Staticfiles { get; set; }
     }
 }

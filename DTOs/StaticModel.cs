@@ -16,7 +16,13 @@ namespace static_sv.DTOs
         [JsonProperty("url")]
         public string? Url { get; set; }
 
-        [JsonProperty("group")]
-        public string? Group { get; set; }
+        [JsonProperty("folder")]
+        public string? Folder { get; set; }
+
+        [JsonProperty("add_preview_url")]
+        public bool AddPreviewUrl { get; set; }
+
+        [JsonProperty("preview_file")]
+        public string? PreviewFile { get; set; }
     }
 }

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using static_sv.Interfaces;
 using Microsoft.Net.Http.Headers;
 using static_sv.Exceptions;
-using Newtonsoft.Json;
 
 namespace static_sv.Services
 {
@@ -15,10 +14,10 @@ namespace static_sv.Services
             _env = env;
             _configuration = configuration;
         }
-        public PhysicalFileResult GetContent(string type, string name)
+        public PhysicalFileResult GetContent(string name)
         {
             // Get the file path
-            var typePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], type);
+            var typePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
 
             // Check if the file exists
             string[] files = Directory.GetFiles(typePath, name, SearchOption.AllDirectories);

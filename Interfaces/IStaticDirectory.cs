@@ -4,6 +4,6 @@ namespace static_sv.Interfaces
 {
     public interface IStaticDirectory
     {
-        public StaticDirectoryModel GetDirectories(string path, string signature);
+        public Task<StaticDirectoryModel> GetDirectories(string path, string query, string signature);
     }
 }

@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using static_sv.DTOs;
 using static_sv.Exceptions;
 using static_sv.Interfaces;
+using static_sv.Models;
 
 namespace static_sv.Services
 {
@@ -10,50 +12,28 @@ namespace static_sv.Services
         private readonly IConfiguration _configuration;
         private readonly IRequestValidator _requestValidator;
         private readonly IHostEnvironment _env;
+        private readonly IFolder _folder;
+        private readonly StaticContext _context;
+        private readonly ILogger<StaticfileService> _logger;
 
-        public StaticfileService(IConfiguration configuration, IRequestValidator requestValidator, IHostEnvironment env)
+        public StaticfileService(IConfiguration configuration, IRequestValidator requestValidator, IHostEnvironment env, IFolder folder, StaticContext context, ILogger<StaticfileService> logger)
         {
             _configuration = configuration;
             _requestValidator = requestValidator;
             _env = env;
+            _folder = folder;
+            _context = context;
+            _logger = logger;
         }
 
-        public string GetStaticPath(string type)
+        public string GetStaticPath()
         {
-            if (type.ToLower() == StaticTypeStore.Image)
-            {
-                string contentPath = _env.ContentRootPath;
-                string staticPath = _configuration["Static:Name"];
-                string imagePath = _configuration["Static:Types:Image"];
-                return Path.Combine(contentPath, staticPath, imagePath);
-            }
-            else if (type.ToLower() == StaticTypeStore.Video)
-            {
-                string contentPath = _env.ContentRootPath;
-                string staticPath = _configuration["Static:Name"];
-                string imagePath = _configuration["Static:Types:Video"];
-                return Path.Combine(contentPath, staticPath, imagePath);
-            }
-            else 
-            {
-                string contentPath = _env.ContentRootPath;
-                string staticPath = _configuration["Static:Name"];
-                string imagePath = _configuration["Static:Types:File"];
-                return Path.Combine(contentPath, staticPath, imagePath);
-            }
-            throw new ErrorResponseException(
-                StatusCodes.Status404NotFound,
-                "Static type not found",
-                new List<Error>{
-                    new Error{
-                        Field="type",
-                        Message=$"Available type: {StaticTypeStore.Image}"
-                    }
-                }
-            );
+            string contentPath = _env.ContentRootPath;
+            string staticPath = _configuration["Static:Name"];
+            return Path.Combine(contentPath, staticPath);
         }
 
-        public async Task<StaticResModel> CreateImage(StaticModel model, string xStaticSig)
+        public async Task<StaticResModel> CreateFile(StaticModel model, string xStaticSig)
         {
             // vlidate the signature
             // vlidate the signature
@@ -61,18 +41,19 @@ namespace static_sv.Services
             {
                 type = model.Type,
                 name = model.Name,
-                group = model.Group
+                folder = model.Folder,
+                add_preview_url = model.AddPreviewUrl
             };
             var serverSig = _requestValidator.Validate(content, xStaticSig);
 
             // Decode the Base64 encoded image data
-            var imageBytes = Convert.FromBase64String(model.Base64EncodedFile!);
+            var fileBytes = Convert.FromBase64String(model.Base64EncodedFile!);
 
             // Create a MemoryStream from the image bytes
             string[] allTypes = model.Type!.Split('/');
             string staticType = allTypes.ElementAt(0);
 
-            string imgType = allTypes.ElementAt(1);
+            string fileType = allTypes.ElementAt(1);
 
 
             bool isStaticType = !string.IsNullOrEmpty(StaticTypes.AllTypes.FirstOrDefault(x => x == staticType));
@@ -87,54 +68,105 @@ namespace static_sv.Services
             // Create a new unique file name
 
             DateTime now = DateTime.Now;
-            string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
+            // string outputDate = now.ToString("yyyy-MM-dd_HH-mm-ss");
 
             string fileName = model.Name!.Replace(" ", "-")
                             .Replace("--", "-");
 
-            var fullName = $"{fileName}_{outputDate}.{imgType}";
-            var imagePath = "";
+            var filePath = GetStaticPath();
+            filePath = Path.Combine(filePath, model.Folder!);
             string contentApi = _configuration["Static:Api:Content"];
 
-            if (staticType == StaticTypes.Image)
-            {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Image"], model.Group!);
-                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Image"]);
-            }
-            else if (staticType == StaticTypes.Video)
-            {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:Video"], model.Group!);
-                contentApi = Path.Combine(contentApi, _configuration["Static:Types:Video"]);
-            }
-            else
-            {
-                imagePath = Path.Combine(_configuration["Static:Name"], _configuration["Static:Types:File"], model.Group!);
-                contentApi = Path.Combine(contentApi, _configuration["Static:Types:File"]);
-            }
-
-
-            using (var memoryStream = new MemoryStream(imageBytes))
+            using (var memoryStream = new MemoryStream(fileBytes))
             {
                 // Save the image to the server's file system
-                if(!System.IO.Directory.Exists(imagePath))
-                    System.IO.Directory.CreateDirectory(imagePath);
-                string imageFullPath = Path.Combine(imagePath, fullName);
-                await System.IO.File.WriteAllBytesAsync(imageFullPath, memoryStream.ToArray());
-                string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-                string imageUrl = Path.Combine(url, contentApi, fullName);
+                Folder folder = new Folder();
+                folder.Path=model.Folder;
+                folder = await _folder.CreateFolder(folder);    
 
-                // return Ok(new { imagePath = $"images/{fileName}" });
+                if(!System.IO.Directory.Exists(filePath))
+                {
+                    System.IO.Directory.CreateDirectory(filePath);
+                }
+                long fileTs = DateConverter.ToTimestamp(now);
+                var fullName = $"{fileName}_{fileTs}.{fileType}";
+                string fileFullPath = Path.Combine(filePath, fullName);
+                await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
+
+                Staticfile staticfile = new Staticfile{
+                    Name=fullName,
+                    FolderId=folder.FolderId,
+                    Path=Path.Combine(model.Folder!, fullName),
+                    Type=model.Type,
+                    Size=memoryStream.Length,
+                    Timestamp=fileTs
+                };
+
+                await _context.Staticfiles.AddAsync(staticfile);
+                int result = await _context.SaveChangesAsync();
+
+                if(result <= 0)
+                {
+                    throw new ErrorResponseException(
+                        StatusCodes.Status500InternalServerError,
+                        "Failed saving Staticfile",
+                        new List<Error>()
+                    );
+                }
+
+
+                string url = _configuration["ASPNETCORE_DOMAIN_URL"];
+                string fileUrl = Path.Combine(url, contentApi, fullName);
+
+                // return Ok(new { filePath = $"images/{fileName}" });
                 StaticResModel resModel = new StaticResModel
                 {
-                    ImageUrl = imageUrl,
+                    FileUrl = fileUrl,
                     Signature = serverSig,
                     ErrorCode = "SUCCESS"
                 };
+
+                if(model.AddPreviewUrl)
+                {
+                    var prevBytes = Convert.FromBase64String(model.PreviewFile!);
+                    now = now.AddSeconds(1);
+                    long prevTs = DateConverter.ToTimestamp(now);
+                    var previewName = $"{fileName}_{prevTs}.png";
+                    string previewPath = Path.Combine(filePath, previewName);
+                    using(var prevStream = new MemoryStream(prevBytes))
+                    {
+                        await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
+                        staticfile = new Staticfile{
+                            Name=previewName,
+                            FolderId=folder.FolderId,
+                            Path=Path.Combine(model.Folder!, previewName),
+                            Type="image/png",
+                            Size=prevStream.Length,
+                            Timestamp=prevTs
+                        };
+
+                        await _context.Staticfiles.AddAsync(staticfile);
+                        result = await _context.SaveChangesAsync();
+                    }
+
+
+                    if(result <= 0)
+                    {
+                        throw new ErrorResponseException(
+                            StatusCodes.Status500InternalServerError,
+                            "Failed saving Staticfile",
+                            new List<Error>()
+                        );
+                    }
+
+                    string prevUrl = Path.Combine(url, contentApi, previewName);
+                    resModel.PreviewUrl=prevUrl;
+                }
                 return resModel;
             }
         }
 
-        public Task DeleteImage(string url, string xStaticSig)
+        public async Task DeleteImage(string url, string xStaticSig)
         {
             // validate the signature
             object deleteContent = new
@@ -146,101 +178,137 @@ namespace static_sv.Services
             Uri imageUri = new Uri(url);
             string[] segments = imageUri.Segments;
             string imageName = segments.Last().Replace("/", "");
-            string imgType = "";
-            // get the image name from the url
-            Console.WriteLine(JsonConvert.SerializeObject(segments));
 
-            if(segments[5].Split("/")[0] == (_configuration["Static:Types:Image"]))
+            // string filePath = GetStaticPath();
+            long timestamp;
+            string strTs = imageName.Split("_")[1].Split(".")[0];
+            Int64.TryParse(strTs, out timestamp);
+
+            // string fullPath = Path.Combine(filePath, imageName);
+            // Console.WriteLine(filePath);
+            StaticfileQuery staticQuery = new StaticfileQuery{
+                Is=StaticfileQueryStore.Staticfile,
+                Timestamp=timestamp
+            };
+
+            var staticfiles = GetStaticfiles(staticQuery);
+            Staticfile? staticfile = new Staticfile();
+            string filePath = String.Empty;
+
+            if(staticfiles.Any())
             {
-                imgType = StaticTypeStore.Image!;
-            }
-            else if(segments[5].Split("/")[0] == (_configuration["Static:Types:Video"]))
-            {
-                imgType = StaticTypeStore.Video!;
-            }else 
-            {
-                imgType = StaticTypeStore.File!;
-            }
+                // Console.WriteLine("getting files");
+                // return Task.CompletedTask;
+                staticfile=staticfiles.FirstOrDefault();
+                filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], staticfile!.Path!);
 
-            string imagePath = GetStaticPath(imgType!);
-
-            // string fullPath = Path.Combine(imagePath, imageName);
-            Console.WriteLine(imagePath);
-
-            var files = Directory.GetFiles(imagePath, imageName, SearchOption.AllDirectories);
-
-            if(!files.Any())
-            {
-                throw new ErrorResponseException(
-                    StatusCodes.Status400BadRequest,
-                    $"image name: {imageName} doesn't exist",
-                    new List<Error>{
-                        new Error{
-                            Message=url,
-                            Field="url"
+                if(!System.IO.File.Exists(filePath))
+                {
+                    _logger.LogWarning("File doesn't exist. Deleting from db...");
+                    _context.Staticfiles.Remove(staticfile);
+                    await _context.SaveChangesAsync();
+                    throw new ErrorResponseException(
+                        StatusCodes.Status400BadRequest,
+                        $"image name: {imageName} doesn't exist",
+                        new List<Error>{
+                            new Error{
+                                Message=url,
+                                Field="url"
+                            }
                         }
-                    }
-                );
-            }
+                    );
+                }
 
-            string imgPath = files[0];
+                System.IO.File.Delete(filePath);
 
-            if (System.IO.File.Exists(imgPath))
-            {
-                System.IO.File.Delete(imgPath);
-                return Task.CompletedTask;
+                _context.Staticfiles.Remove(staticfile);
+                await _context.SaveChangesAsync();
+                return;
             }
 
             throw new ErrorResponseException(
                 StatusCodes.Status400BadRequest,
-                $"image name: {imageName} doesn't exist",
+                $"image name: {imageName} doesn't exist both in db and server",
                 new List<Error>{
-                    new Error{
-                        Message=imgPath,
-                        Field="full_name"
-                    },
                     new Error{
                         Message=url,
                         Field="url"
                     }
                 }
             );
+            // var files = Directory.GetFiles(filePath, imageName, SearchOption.AllDirectories);
+
+
+
+            // if(!files.Any())
+            // {
+            // }
+
+            
+
+            // return Task.CompletedTask;
+            // string imgPath = files[0];
+
+            // if (System.IO.File.Exists(imgPath))
+            // {
+            // }
+
+            // throw new ErrorResponseException(
+            //     StatusCodes.Status400BadRequest,
+            //     $"image name: {imageName} doesn't exist",
+            //     new List<Error>{
+            //         new Error{
+            //             Message=imgPath,
+            //             Field="full_name"
+            //         },
+            //         new Error{
+            //             Message=url,
+            //             Field="url"
+            //         }
+            //     }
+            // );
         }
 
-        // public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig)
-        // {
-        //     // validate the signature
-        //     object deleteContent = new
-        //     {
-        //         query = queryParams.query
-        //     };
+        public IEnumerable<Staticfile> GetStaticfiles(StaticfileQuery query)
+        {
+            IEnumerable<Staticfile> staticfiles = new List<Staticfile>();
 
-        //     _requestValidator.Validate(deleteContent, xStaticSig);
+            if(query.Is == StaticfileQueryStore.Folder)
+            {
+                return staticfiles=_context.Staticfiles
+                    .Where(s => s.FolderId == query.FolderId && 
+                        (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true))
+                    .Take(query.Limit)
+                    .AsNoTracking();
+            }
 
-        //     string imageDirPath = GetStaticPath(StaticTypeStore.Image!);
+            if(query.Is == StaticfileQueryStore.Staticfile)
+            {
+                return staticfiles=_context.Staticfiles
+                    .Where(f => f.StaticfileId == query.StaticfileId ||
+                        f.Timestamp == query.Timestamp)
+                    .AsNoTracking();
+                
+                // foreach(Staticfile s in staticfiles)
+                // {
+                //     long dbTs = DateConverter.ToTimestamp(s.CreatedDate);
+                //     Console.WriteLine($"s: {dbTs} - q; {query.Timestamp}");
+                //     if(dbTs == query.Timestamp)
+                //     {
+                //         var result = new List<Staticfile>();
+                //         result.Add(s);
+                //         return result;
+                //     }
+                // }
+                
+            }
 
-        //     // get the query else throw
-        //     if (queryParams.query == StaticQueryStore.All)
-        //     {
-        //         string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-        //         var staticPath = _configuration["Static:Name"];
-        //         var imagePath = _configuration["Static:Types:Image"];
+            throw new ErrorResponseException(
+                StatusCodes.Status501NotImplemented,
+                $"Type not implement",
+                new List<Error>{}
+            );
 
-        //         string[] entries = System.IO.Directory.GetFileSystemEntries(imageDirPath);
-        //         var imageUrls = entries.Select(e => Path.Combine(url, staticPath, imagePath, e.Split("/").Last()));
-        //         return imageUrls;
-        //     }
-
-        //     throw new ErrorResponseException(
-        //         StatusCodes.Status404NotFound,
-        //         "Query type not found",
-        //         new List<Error>{
-        //             new Error{
-        //                 Field="query",
-        //                 Message=$"Available type: {StaticQueryStore.All}"
-        //             }
-        //         }
-        //     );
-        // }
+        }
     }
 }

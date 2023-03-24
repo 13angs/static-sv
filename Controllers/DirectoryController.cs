@@ -11,13 +11,15 @@ namespace static_sv.Controllers
         private readonly IStaticDirectory _directory;
         private readonly string _signature;
         private readonly IConfiguration _configuration;
+        private readonly IFolder _folder;
 
-        public DirectoryController(IStaticDirectory directory, IHttpContextAccessor contextAccessor, IConfiguration configuration)
+        public DirectoryController(IStaticDirectory directory, IHttpContextAccessor contextAccessor, IConfiguration configuration, IFolder folder)
         {
             _directory = directory;
             _configuration = configuration;
             _signature = contextAccessor.HttpContext!
                 .Request.Headers[_configuration["Static:Header"]].ToString();
+            _folder = folder;
         }
 
         // [HttpGet]
@@ -26,10 +28,18 @@ namespace static_sv.Controllers
         //     return _directory.GetDirectories("");
         // }
 
-        [HttpGet]
-        public ActionResult<StaticDirectoryModel> GetDirectories([FromQuery] string query)
+        [HttpGet("{*path}")]
+        public async Task<ActionResult<StaticDirectoryModel>> GetDirectories([FromRoute] string path, [FromQuery] string query)
         {
-            return _directory.GetDirectories(query, _signature);
+            return await _directory.GetDirectories(path, query, _signature);
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        public async Task<ActionResult> RemoveFolder([FromRoute] long id)
+        {
+            await _folder.RemoveFolder(id);
+            return Ok();
         }
     }
 }
