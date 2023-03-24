@@ -63,4 +63,8 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = configuration["Static:Path"]
 });
 
+var scope = app.Services.CreateAsyncScope();
+StaticContext context = scope.ServiceProvider.GetRequiredService<StaticContext>();
+await context.Database.MigrateAsync();
+
 app.Run();

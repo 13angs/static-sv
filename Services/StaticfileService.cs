@@ -129,7 +129,7 @@ namespace static_sv.Services
                 if(model.AddPreviewUrl)
                 {
                     var prevBytes = Convert.FromBase64String(model.PreviewFile!);
-                    now = DateTime.Now;
+                    now = now.AddSeconds(1);
                     long prevTs = DateConverter.ToTimestamp(now);
                     var previewName = $"{fileName}_{prevTs}.png";
                     string previewPath = Path.Combine(filePath, previewName);
@@ -200,7 +200,7 @@ namespace static_sv.Services
                 // Console.WriteLine("getting files");
                 // return Task.CompletedTask;
                 staticfile=staticfiles.FirstOrDefault();
-                filePath = Path.Combine(_configuration["Static:Name"], staticfile!.Path!);
+                filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], staticfile!.Path!);
 
                 if(!System.IO.File.Exists(filePath))
                 {
@@ -223,11 +223,12 @@ namespace static_sv.Services
 
                 _context.Staticfiles.Remove(staticfile);
                 await _context.SaveChangesAsync();
+                return;
             }
 
             throw new ErrorResponseException(
                 StatusCodes.Status400BadRequest,
-                $"image name: {imageName} doesn't exist",
+                $"image name: {imageName} doesn't exist both in db and server",
                 new List<Error>{
                     new Error{
                         Message=url,
