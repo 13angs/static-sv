@@ -74,7 +74,8 @@ namespace static_sv.Services
                 Is=StaticfileQueryStore.Folder,
                 FolderId=folder.FolderId,
                 Type=staticQuery.Type,
-                Limit=staticQuery.Limit
+                Limit=staticQuery.Limit,
+                Name=staticQuery.Name
             };
             var staticfiles = _static.GetStaticfiles(staticfileQuery);
             // var subdirectories = directory.GetDirectories();

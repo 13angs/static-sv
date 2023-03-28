@@ -166,7 +166,7 @@ namespace static_sv.Services
             }
         }
 
-        public async Task DeleteImage(string url, string xStaticSig)
+        public async Task DeleteFile(string url, string xStaticSig)
         {
             // validate the signature
             object deleteContent = new
@@ -180,15 +180,15 @@ namespace static_sv.Services
             string imageName = segments.Last().Replace("/", "");
 
             // string filePath = GetStaticPath();
-            long timestamp;
-            string strTs = imageName.Split("_")[1].Split(".")[0];
-            Int64.TryParse(strTs, out timestamp);
+            // long timestamp;
+            // string strTs = imageName.Split("_")[1].Split(".")[0];
+            // Int64.TryParse(strTs, out timestamp);
 
             // string fullPath = Path.Combine(filePath, imageName);
             // Console.WriteLine(filePath);
             StaticfileQuery staticQuery = new StaticfileQuery{
                 Is=StaticfileQueryStore.Staticfile,
-                Timestamp=timestamp
+                Name=imageName
             };
 
             var staticfiles = GetStaticfiles(staticQuery);
@@ -277,7 +277,9 @@ namespace static_sv.Services
             {
                 return staticfiles=_context.Staticfiles
                     .Where(s => s.FolderId == query.FolderId && 
-                        (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true))
+                        (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true) &&
+                        (!String.IsNullOrEmpty(query.Name) ? s.Name!.Contains(query.Name) : true)
+                        )
                     .Take(query.Limit)
                     .AsNoTracking();
             }
@@ -286,7 +288,8 @@ namespace static_sv.Services
             {
                 return staticfiles=_context.Staticfiles
                     .Where(f => f.StaticfileId == query.StaticfileId ||
-                        f.Timestamp == query.Timestamp)
+                            f.Name == query.Name
+                        )
                     .AsNoTracking();
                 
                 // foreach(Staticfile s in staticfiles)

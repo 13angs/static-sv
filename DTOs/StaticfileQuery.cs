@@ -8,5 +8,6 @@ namespace static_sv.DTOs
         public virtual int Limit { get; set; }
         public virtual long StaticfileId { get; set; }
         public virtual long Timestamp { get; set; }
+        public virtual string? Name { get; set; }
     }
 }
