@@ -40,7 +40,7 @@ namespace static_sv.Controllers
         [HttpDelete]
         public async Task<ActionResult> RemoveImage([FromBody] StaticModel model)
         {
-            await _staticSv.DeleteImage(model.Url!, _xStaticSig);
+            await _staticSv.DeleteFile(model.Url!, _xStaticSig);
             return Ok();
         }
     }
