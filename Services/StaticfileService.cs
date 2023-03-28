@@ -277,7 +277,9 @@ namespace static_sv.Services
             {
                 return staticfiles=_context.Staticfiles
                     .Where(s => s.FolderId == query.FolderId && 
-                        (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true))
+                        (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true) &&
+                        (!String.IsNullOrEmpty(query.Name) ? s.Name!.Contains(query.Name) : true)
+                        )
                     .Take(query.Limit)
                     .AsNoTracking();
             }
