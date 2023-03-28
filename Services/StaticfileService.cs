@@ -129,9 +129,9 @@ namespace static_sv.Services
                 if(model.AddPreviewUrl)
                 {
                     var prevBytes = Convert.FromBase64String(model.PreviewFile!);
-                    now = now.AddSeconds(1);
-                    long prevTs = DateConverter.ToTimestamp(now);
-                    var previewName = $"{fileName}_{prevTs}.png";
+                    // now = now.AddSeconds(1);
+                    // long prevTs = DateConverter.ToTimestamp(now);
+                    var previewName = $"{fileName}_{fileTs}.png";
                     string previewPath = Path.Combine(filePath, previewName);
                     using(var prevStream = new MemoryStream(prevBytes))
                     {
@@ -142,7 +142,7 @@ namespace static_sv.Services
                             Path=Path.Combine(model.Folder!, previewName),
                             Type="image/png",
                             Size=prevStream.Length,
-                            Timestamp=prevTs
+                            Timestamp=fileTs
                         };
 
                         await _context.Staticfiles.AddAsync(staticfile);
