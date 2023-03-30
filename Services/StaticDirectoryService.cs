@@ -83,7 +83,9 @@ namespace static_sv.Services
                     Size=s.Size,
                     FolderId=s.FolderId,
                     Timestamp=s.Timestamp,
-                    Url=ContentUrl.ToContentUrl(s, _configuration)
+                    Url=ContentUrl.ToContentUrl(s, _configuration),
+                    ParentFileId=s.ParentFileId,
+                    RelatedFiles=s.RelatedFiles
                 });
             }
 

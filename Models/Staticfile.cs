@@ -38,6 +38,7 @@ namespace static_sv.Models
 
         [Column("folder")]
         [JsonProperty("folder")]
+        [JsonIgnoreAttribute]
         public virtual Folder? Folder { get; set; }
 
         [Column("timestamp")]
@@ -46,6 +47,7 @@ namespace static_sv.Models
 
         [Column("file_data")]
         [JsonProperty("file_data")]
+        [JsonIgnoreAttribute]
         public virtual byte[]? FileData { get; set; }
 
         [Column("parent_file_id")]
@@ -54,6 +56,7 @@ namespace static_sv.Models
 
         [Column("parent_file")]
         [JsonProperty("parent_file")]
+        [JsonIgnoreAttribute]
         public virtual Staticfile? ParentFile { get; set; }
 
         [Column("related_files")]
