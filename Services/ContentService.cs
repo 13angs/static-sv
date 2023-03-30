@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using static_sv.Interfaces;
 using Microsoft.Net.Http.Headers;
+using static_sv.DTOs;
+using static_sv.Models;
 using static_sv.Exceptions;
 
 namespace static_sv.Services
@@ -9,18 +11,47 @@ namespace static_sv.Services
     {
         private readonly IConfiguration _configuration;
         private readonly IHostEnvironment _env;
-        public ContentService(IHostEnvironment env, IConfiguration configuration)
+
+        private readonly IStaticfile _static;
+        public ContentService(IHostEnvironment env, IConfiguration configuration, IStaticfile @static)
         {
             _env = env;
             _configuration = configuration;
+            _static = @static;
         }
-        public PhysicalFileResult GetContent(string name)
+        public FileContentResult GetContent(string name, ContentQueryModel model)
         {
             // Get the file path
-            var typePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
+            // var typePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
 
             // Check if the file exists
-            string[] files = Directory.GetFiles(typePath, name, SearchOption.AllDirectories);
+            // string[] files = Directory.GetFiles(typePath, name, SearchOption.AllDirectories);
+
+            // if(!files.Any())
+            // {
+            //     throw new ErrorResponseException(
+            //         StatusCodes.Status404NotFound,
+            //         "File not found",
+            //         new List<Error>()
+            //     );
+            // }
+            // string file = files[0];
+
+            // if (!System.IO.File.Exists(file))
+            // {
+            //     throw new ErrorResponseException(
+            //         StatusCodes.Status404NotFound,
+            //         "File not found",
+            //         new List<Error>()
+            //     );
+            // }
+
+            StaticfileQuery staticfileQuery = new StaticfileQuery{
+                StaticfileId=model.Id,
+                Is=StaticfileQueryStore.Staticfile
+            };
+
+            var files = _static.GetStaticfiles(staticfileQuery);
 
             if(!files.Any())
             {
@@ -30,26 +61,25 @@ namespace static_sv.Services
                     new List<Error>()
                 );
             }
-            string file = files[0];
 
-            if (!System.IO.File.Exists(file))
-            {
-                throw new ErrorResponseException(
-                    StatusCodes.Status404NotFound,
-                    "File not found",
-                    new List<Error>()
-                );
-            }
+            var file = files.ElementAt(0);
 
             // Get the file extension
-            var extension = Path.GetExtension(file);
+            // var extension = Path.GetExtension(file);
 
-            // Get the content type based on the extension
-            var contentType = MediaTypeHeaderValue
-                .Parse(GetMimeType(extension)).ToString();
+            // // Get the content type based on the extension
+            // var contentType = MediaTypeHeaderValue
+            //     .Parse(GetMimeType(extension)).ToString();
 
             // Return the image file
-            return PhysicalFile(file, contentType);
+
+            using (MemoryStream ms = new MemoryStream(file.FileData!))
+            {
+                byte[] pngBytes = ms.ToArray();
+
+                return File(pngBytes, file.Type!);
+            }
+            // return PhysicalFile(file, file.Type);
         }
 
         public string GetMimeType(string extension)
@@ -94,6 +124,5 @@ namespace static_sv.Services
                     return "application/octet-stream";
             }
         }
-
     }
 }
