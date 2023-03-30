@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using static_sv.DTOs;
 using static_sv.Interfaces;
 
 namespace static_sv.Controllers
@@ -17,9 +18,9 @@ namespace static_sv.Controllers
 
         // [HttpGet("{*path}")]
         [HttpGet("{name}")]
-        public IActionResult Index([FromRoute] string name)
+        public IActionResult Index([FromRoute] string name, [FromQuery] ContentQueryModel model)
         {
-            return _content.GetContent(name);
+            return _content.GetContent(name, model);
         }
     }
 }
