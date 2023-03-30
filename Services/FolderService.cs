@@ -78,9 +78,9 @@ namespace static_sv.Services
         public async Task RemoveFolder(long folderId)
         {
             Folder? folder = await _context.Folders.FirstOrDefaultAsync(f => f.FolderId == folderId);
-            string folderFullPath = Path.Combine(_configuration["Static:Name"], folder!.Path!);
+            // string folderFullPath = Path.Combine(_configuration["Static:Name"], folder!.Path!);
 
-            bool localFolder = Directory.Exists(folderFullPath);
+            // bool localFolder = Directory.Exists(folderFullPath);
 
             if(folder == null)
                 throw new ErrorResponseException(
@@ -88,12 +88,12 @@ namespace static_sv.Services
                     "Folder not exist in db",
                 new List<Error>()
             );
-            if(!localFolder)
-                throw new ErrorResponseException(
-                    StatusCodes.Status404NotFound,
-                    "Folder not exist in server",
-                new List<Error>()
-            );
+            // if(!localFolder)
+            //     throw new ErrorResponseException(
+            //         StatusCodes.Status404NotFound,
+            //         "Folder not exist in server",
+            //     new List<Error>()
+            // );
 
             // remove all the files
             IEnumerable<Staticfile> staticfiles = _context.Staticfiles
@@ -118,7 +118,7 @@ namespace static_sv.Services
             int result = await _context.SaveChangesAsync();
             if(result > 0)
             {
-                Directory.Delete(folderFullPath, true);
+                // Directory.Delete(folderFullPath, true);
                 _logger.LogInformation("Successfully remove the folder");
                 return;
             }

@@ -1,3 +1,4 @@
+using System.Web;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using static_sv.DTOs;
@@ -180,8 +181,11 @@ namespace static_sv.Services
 
             _requestValidator.Validate(deleteContent, xStaticSig);
             Uri imageUri = new Uri(url);
-            string[] segments = imageUri.Segments;
-            string imageName = segments.Last().Replace("/", "");
+            string query = imageUri.PathAndQuery;
+            string strId = HttpUtility.ParseQueryString(imageUri.Query).Get("id")!;
+            long staticId;
+            Int64.TryParse(strId, out staticId);
+            // string imageName = segments.Last().Replace("/", "");
 
             // string filePath = GetStaticPath();
             // long timestamp;
@@ -192,51 +196,64 @@ namespace static_sv.Services
             // Console.WriteLine(filePath);
             StaticfileQuery staticQuery = new StaticfileQuery{
                 Is=StaticfileQueryStore.Staticfile,
-                Name=imageName
+                StaticfileId=staticId
+                // Name=imageName
             };
 
             var staticfiles = GetStaticfiles(staticQuery);
             Staticfile? staticfile = new Staticfile();
-            string filePath = String.Empty;
+            // string filePath = String.Empty;
 
             if(staticfiles.Any())
             {
                 // Console.WriteLine("getting files");
                 // return Task.CompletedTask;
                 staticfile=staticfiles.FirstOrDefault();
-                filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], staticfile!.Path!);
 
-                if(!System.IO.File.Exists(filePath))
-                {
-                    _logger.LogWarning("File doesn't exist. Deleting from db...");
-                    _context.Staticfiles.Remove(staticfile);
-                    await _context.SaveChangesAsync();
-                    throw new ErrorResponseException(
-                        StatusCodes.Status400BadRequest,
-                        $"image name: {imageName} doesn't exist",
-                        new List<Error>{
-                            new Error{
-                                Message=url,
-                                Field="url"
-                            }
-                        }
-                    );
-                }
+                // find the related file
+                staticQuery = new StaticfileQuery{
+                    Is=StaticfileQueryStore.RelatedFile,
+                    StaticfileId=staticfile!.StaticfileId
+                };
 
-                System.IO.File.Delete(filePath);
+                var relatedFiles = GetStaticfiles(staticQuery);
 
-                _context.Staticfiles.Remove(staticfile);
+                if(relatedFiles.Any())
+                    _context.Staticfiles.RemoveRange(relatedFiles);
+                
+                // filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], staticfile!.Path!);
+
+                // if(!System.IO.File.Exists(filePath))
+                // {
+                //     _logger.LogWarning("File doesn't exist. Deleting from db...");
+                //     _context.Staticfiles.Remove(staticfile);
+                //     await _context.SaveChangesAsync();
+                //     throw new ErrorResponseException(
+                //         StatusCodes.Status400BadRequest,
+                //         $"image name: {imageName} doesn't exist",
+                //         new List<Error>{
+                //             new Error{
+                //                 Message=url,
+                //                 Field="url"
+                //             }
+                //         }
+                //     );
+                // }
+
+                // System.IO.File.Delete(filePath);
+
+                _context.Staticfiles.Remove(staticfile!);
                 await _context.SaveChangesAsync();
                 return;
             }
 
             throw new ErrorResponseException(
                 StatusCodes.Status400BadRequest,
-                $"image name: {imageName} doesn't exist both in db and server",
+                $"image with id: {strId} doesn't exist",
                 new List<Error>{
                     new Error{
-                        Message=url,
-                        Field="url"
+                        Message=strId,
+                        Field="id"
                     }
                 }
             );
@@ -261,6 +278,15 @@ namespace static_sv.Services
             {
                 return staticfiles=_context.Staticfiles
                     .Where(f => f.StaticfileId == query.StaticfileId ||
+                            f.Name == query.Name
+                        )
+                    .AsNoTracking();
+            }
+
+            if(query.Is == StaticfileQueryStore.RelatedFile)
+            {
+                return staticfiles=_context.Staticfiles
+                    .Where(f => f.ParentFileId == query.StaticfileId ||
                             f.Name == query.Name
                         )
                     .AsNoTracking();
