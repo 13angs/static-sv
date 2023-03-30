@@ -75,24 +75,39 @@ namespace static_sv.Services
             IEnumerable<StaticfileModel>? updatedStatics = new List<StaticfileModel>();
             if(staticfileModels!.Any())
             {
-                updatedStatics = staticfileModels!.Select(s => new StaticfileModel{
-                    StaticfileId=s.StaticfileId,
-                    Name=s.Name,
-                    Path=s.Path,
-                    Type=s.Type,
-                    Size=s.Size,
-                    FolderId=s.FolderId,
-                    Timestamp=s.Timestamp,
-                    Url=ContentUrl.ToContentUrl(s, _configuration),
-                    ParentFileId=s.ParentFileId,
-                    RelatedFiles=s.RelatedFiles
-                });
+                foreach(StaticfileModel s in staticfileModels!)
+                {
+                    s.Url=ContentUrl.ToContentUrl(s, _configuration);
+                    string strRelFiles = JsonConvert.SerializeObject(s.RelatedFiles);
+                    s.Files = JsonConvert.DeserializeObject<IEnumerable<StaticfileModel>>(strRelFiles);
+
+                    if(s.Files != null)
+                    {
+                        foreach(StaticfileModel rf in s.Files!)
+                        {
+                            rf.Url=ContentUrl.ToContentUrl(rf, _configuration);
+                        }
+                    }
+                    s.RelatedFiles=null;
+                }
+                // updatedStatics = staticfileModels!.Select(s => new StaticfileModel{
+                //     StaticfileId=s.StaticfileId,
+                //     Name=s.Name,
+                //     Path=s.Path,
+                //     Type=s.Type,
+                //     Size=s.Size,
+                //     FolderId=s.FolderId,
+                //     Timestamp=s.Timestamp,
+                //     Url=ContentUrl.ToContentUrl(s, _configuration),
+                //     ParentFileId=s.ParentFileId,
+                //     RelatedFiles=s.RelatedFiles
+                // });
             }
 
             StaticDirectoryModel model = new StaticDirectoryModel
             {
                 Folders = subFolders.ToList(),
-                Staticfiles = updatedStatics!.ToList()
+                Staticfiles = staticfileModels!.ToList()
             };
 
             return model;

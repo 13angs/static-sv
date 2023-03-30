@@ -45,6 +45,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}else{
+    app.UseResponseExceptionHandler();
 }
 
 // app.UseHttpsRedirection();
@@ -53,7 +55,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.UseResponseExceptionHandler();
 
 app.UseStaticFiles(new StaticFileOptions
 {
