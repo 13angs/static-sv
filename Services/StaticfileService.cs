@@ -266,8 +266,7 @@ namespace static_sv.Services
             if(query.Is == StaticfileQueryStore.Folder)
             {
                 return staticfiles=_context.Staticfiles
-                    .Include(s => s.RelatedFiles
-                    )
+                    .Include(s => s.RelatedFiles)
                     .Where(s => s.FolderId == query.FolderId && 
                         (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true) &&
                         (!String.IsNullOrEmpty(query.Name) ? s.Name!.Contains(query.Name) : true)
@@ -287,7 +286,7 @@ namespace static_sv.Services
 
             if(query.Is == StaticfileQueryStore.RelatedFile)
             {
-                staticfiles=_context.Staticfiles
+                return staticfiles=_context.Staticfiles
                     .Include(s => s.RelatedFiles)
                     .Where(f => f.ParentFileId == query.StaticfileId ||
                             f.Name == query.Name

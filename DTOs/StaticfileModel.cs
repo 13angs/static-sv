@@ -7,5 +7,6 @@ namespace static_sv.DTOs
     {
         [JsonProperty("url")]
         public virtual string? Url { get; set; }
+        public virtual IEnumerable<StaticfileModel>? Files {get; set;}
     }
 }
