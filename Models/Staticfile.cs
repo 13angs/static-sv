@@ -43,5 +43,21 @@ namespace static_sv.Models
         [Column("timestamp")]
         [JsonProperty("timestamp")]
         public virtual long Timestamp { get; set; }
+
+        [Column("file_data")]
+        [JsonProperty("file_data")]
+        public virtual byte[]? FileData { get; set; }
+
+        [Column("parent_file_id")]
+        [JsonProperty("parent_file_id")]
+        public virtual long? ParentFileId { get; set; }
+
+        [Column("parent_file")]
+        [JsonProperty("parent_file")]
+        public virtual Staticfile? ParentFile { get; set; }
+
+        [Column("related_files")]
+        [JsonProperty("related_files")]
+        public virtual List<Staticfile>? RelatedFiles { get; set; }
     }
 }
