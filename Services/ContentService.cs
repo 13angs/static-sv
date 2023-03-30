@@ -124,6 +124,5 @@ namespace static_sv.Services
                     return "application/octet-stream";
             }
         }
-
     }
 }

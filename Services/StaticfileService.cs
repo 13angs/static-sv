@@ -114,13 +114,13 @@ namespace static_sv.Services
             }
 
 
-            string url = _configuration["ASPNETCORE_DOMAIN_URL"];
-            string fileUrl = Path.Combine(url, contentApi, staticfile.Name);
+            // string url = _configuration["ASPNETCORE_DOMAIN_URL"];
+            // string fileUrl = Path.Combine(url, contentApi, staticfile.Name);
 
             // return Ok(new { filePath = $"images/{fileName}" });
             StaticResModel resModel = new StaticResModel
             {
-                FileUrl = $"{fileUrl}?id={staticfile.StaticfileId}&filetype={staticfile.Type.Split("/")[1]}",
+                FileUrl = ContentUrl.ToContentUrl(staticfile, _configuration),
                 Signature = serverSig,
                 ErrorCode = "SUCCESS"
             };
@@ -161,8 +161,8 @@ namespace static_sv.Services
                     );
                 }
 
-                string prevUrl = Path.Combine(url, contentApi, relatedFile.Name);
-                resModel.PreviewUrl=$"{prevUrl}?name={relatedFile.StaticfileId}&filetype={relatedFile.Type.Split("/")[1]}";
+                // string prevUrl = Path.Combine(url, contentApi, relatedFile.Name);
+                resModel.PreviewUrl=ContentUrl.ToContentUrl(relatedFile, _configuration);
             }
             return resModel;
             // using (var memoryStream = new MemoryStream(fileBytes))

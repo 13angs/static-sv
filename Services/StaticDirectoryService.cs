@@ -46,15 +46,6 @@ namespace static_sv.Services
             string json = JsonConvert.SerializeObject(keyValuePairs);
             StaticQuery staticQuery = JsonConvert.DeserializeObject<StaticQuery>(json)!;
 
-            // if(String.IsNullOrEmpty(staticQuery.GroupId) && staticQuery.Is == QueryTypeStore.Group)
-            // {
-            //     throw new ErrorResponseException(
-            //         StatusCodes.Status404NotFound,
-            //         "GroupId not found or is empty",
-            //         new List<Error>()
-            //     );
-            // }
-
             // find folder in db
             Folder folder = await _folder.GetFolder(path);
 
@@ -65,9 +56,9 @@ namespace static_sv.Services
             };
             var subFolders = _folder.GetFolders(folderQuery);
 
-            var root = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
-            string dirPath = Path.Combine(root, path);
-            var directory = new DirectoryInfo(dirPath);
+            // var root = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
+            // string dirPath = Path.Combine(root, path);
+            // var directory = new DirectoryInfo(dirPath);
 
             // get all the files
             StaticfileQuery staticfileQuery = new StaticfileQuery{
@@ -78,19 +69,7 @@ namespace static_sv.Services
                 Name=staticQuery.Name
             };
             var staticfiles = _static.GetStaticfiles(staticfileQuery);
-            // var subdirectories = directory.GetDirectories();
 
-            // var files = directory.GetFiles().Take(staticQuery.Limit);
-            // if(!String.IsNullOrEmpty(staticQuery.Name))
-            // {
-            //     files = files.Where(f => f.Name.Contains(staticQuery.Name)).ToArray();
-            // }
-
-            // var directories = new List<DirectoryInfo>();
-            // foreach (var subdirectory in subdirectories)
-            // {
-            //     directories.Add(subdirectory);
-            // }
             string strStatic = JsonConvert.SerializeObject(staticfiles);
             IEnumerable<StaticfileModel>? staticfileModels = JsonConvert.DeserializeObject<IEnumerable<StaticfileModel>>(strStatic);
             IEnumerable<StaticfileModel>? updatedStatics = new List<StaticfileModel>();
@@ -104,7 +83,7 @@ namespace static_sv.Services
                     Size=s.Size,
                     FolderId=s.FolderId,
                     Timestamp=s.Timestamp,
-                    Url=Path.Combine(_configuration["ASPNETCORE_DOMAIN_URL"], _configuration["Static:Api:Content"], s.Name!)
+                    Url=ContentUrl.ToContentUrl(s, _configuration)
                 });
             }
 
@@ -113,8 +92,6 @@ namespace static_sv.Services
                 Folders = subFolders.ToList(),
                 Staticfiles = updatedStatics!.ToList()
             };
-
-            // _logger.LogInformation(JsonConvert.SerializeObject(model));
 
             return model;
         }
