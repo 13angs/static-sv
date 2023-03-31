@@ -32,6 +32,7 @@ namespace static_sv.Controllers
         // }
 
         [HttpPost]
+        [RequestSizeLimit(268_435_456)]
         public async Task<ActionResult<StaticResModel>> CreateImage([FromBody]StaticModel model)
         {
             return await _staticSv.CreateFile(model, _xStaticSig);
