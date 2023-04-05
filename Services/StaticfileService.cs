@@ -31,7 +31,12 @@ namespace static_sv.Services
         {
             string contentPath = _env.ContentRootPath;
             string staticPath = _configuration["Static:Name"];
-            return Path.Combine(contentPath, staticPath);
+            string filePath = _configuration["Static:FilePath"];
+            string fullPath = Path.Combine(contentPath, staticPath, filePath);
+
+            if(!Directory.Exists(fullPath))
+                Directory.CreateDirectory(fullPath);
+            return fullPath;
         }
 
         public async Task<StaticResModel> CreateFile(StaticModel model, string xStaticSig)
@@ -74,8 +79,8 @@ namespace static_sv.Services
             string fileName = model.Name!.Replace(" ", "-")
                             .Replace("--", "-");
 
-            // var filePath = GetStaticPath();
-            // filePath = Path.Combine(filePath, model.Folder!);
+            var filePath = GetStaticPath();
+            filePath = Path.Combine(filePath, model.Folder!);
             string contentApi = _configuration["Static:Api:Content"];
 
             // Save the image to the server's file system
@@ -83,14 +88,20 @@ namespace static_sv.Services
             folder.Path=model.Folder;
             folder = await _folder.CreateFolder(folder);    
 
-            // if(!System.IO.Directory.Exists(filePath))
-            // {
-            //     System.IO.Directory.CreateDirectory(filePath);
-            // }
+            if(!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
+
+
             long fileTs = DateConverter.ToTimestamp(now);
-            var fullName = $"{fileName}";
-            // string fileFullPath = Path.Combine(filePath, fullName);
-            // await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
+            var fullName = $"{fileName}_{fileTs}.{fileType}";
+            string fileFullPath = Path.Combine(filePath, fullName);
+
+            using(var memoryStream = new MemoryStream(fileBytes))
+            {
+                await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
+            }
 
             Staticfile staticfile = new Staticfile{
                 Name=fullName,
@@ -99,7 +110,7 @@ namespace static_sv.Services
                 Type=model.Type,
                 Size=fileBytes.Length,
                 Timestamp=fileTs,
-                FileData=fileBytes
+                // FileData=fileBytes
             };
 
             await _context.Staticfiles.AddAsync(staticfile);
@@ -131,9 +142,12 @@ namespace static_sv.Services
                 var prevBytes = Convert.FromBase64String(model.PreviewFile!);
                 // now = now.AddSeconds(1);
                 // long prevTs = DateConverter.ToTimestamp(now);
-                var previewName = $"{fileName}";
-                // string previewPath = Path.Combine(filePath, previewName);
-                // await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
+                var previewName = $"{fileName}_{fileTs}.png";
+                string previewPath = Path.Combine(filePath, previewName);
+                using(var prevStream = new MemoryStream(prevBytes))
+                {
+                    await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
+                }
                 Staticfile relatedFile = new Staticfile{
                     Name=previewName,
                     FolderId=folder.FolderId,
@@ -141,7 +155,7 @@ namespace static_sv.Services
                     Type="image/png",
                     Size=prevBytes.Length,
                     Timestamp=fileTs,
-                    FileData=prevBytes,
+                    // FileData=prevBytes,
                     ParentFileId=staticfile.StaticfileId
                 };
 
@@ -202,7 +216,7 @@ namespace static_sv.Services
 
             var staticfiles = GetStaticfiles(staticQuery);
             Staticfile? staticfile = new Staticfile();
-            // string filePath = String.Empty;
+            string filePath = String.Empty;
 
             if(staticfiles.Any())
             {
@@ -219,9 +233,16 @@ namespace static_sv.Services
                 var relatedFiles = GetStaticfiles(staticQuery);
 
                 if(relatedFiles.Any())
+                {
+                    foreach(var relatedFile in relatedFiles)
+                    {
+                        filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], relatedFile!.Path!);
+                        File.Delete(filePath);
+                    }
                     _context.Staticfiles.RemoveRange(relatedFiles);
+                }
                 
-                // filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], staticfile!.Path!);
+                filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], staticfile!.Path!);
 
                 // if(!System.IO.File.Exists(filePath))
                 // {
@@ -240,7 +261,7 @@ namespace static_sv.Services
                 //     );
                 // }
 
-                // System.IO.File.Delete(filePath);
+                System.IO.File.Delete(filePath);
 
                 _context.Staticfiles.Remove(staticfile!);
                 await _context.SaveChangesAsync();
@@ -311,7 +332,7 @@ namespace static_sv.Services
 
             // Decode the Base64 encoded image data
             byte[] fileBytes = null!;
-            Console.WriteLine(model.FileData);
+            // Console.WriteLine(model.FileData);
             // if(model.FileData == null)
             // {
             //     throw new ErrorResponseException(
@@ -320,12 +341,6 @@ namespace static_sv.Services
             //         new List<Error>()
             //     );
             // }
-
-            using(var ms = new MemoryStream())
-            {
-                await model.FileData!.CopyToAsync(ms);
-                fileBytes = ms.ToArray();
-            }
 
             // Create a MemoryStream from the image bytes
             string[] allTypes = model.Type!.Split('/');
@@ -351,8 +366,8 @@ namespace static_sv.Services
             string fileName = model.Name!.Replace(" ", "-")
                             .Replace("--", "-");
 
-            // var filePath = GetStaticPath();
-            // filePath = Path.Combine(filePath, model.Folder!);
+            var filePath = GetStaticPath();
+            filePath = Path.Combine(filePath, model.Folder!);
             string contentApi = _configuration["Static:Api:Content"];
 
             // Save the image to the server's file system
@@ -360,15 +375,27 @@ namespace static_sv.Services
             folder.Path=model.Folder;
             folder = await _folder.CreateFolder(folder);    
 
+            if(!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
+
             // if(!System.IO.Directory.Exists(filePath))
             // {
             //     System.IO.Directory.CreateDirectory(filePath);
             // }
             long fileTs = DateConverter.ToTimestamp(now);
-            var fullName = $"{fileName}";
-            // string fileFullPath = Path.Combine(filePath, fullName);
+            var fullName = $"{fileName}_{fileTs}.{fileType}";
+            string fileFullPath = Path.Combine(filePath, fullName);
             // await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
             Console.WriteLine(model.AddPreviewUrl);
+
+            using(var ms = new MemoryStream())
+            {
+                await model.FileData!.CopyToAsync(ms);
+                fileBytes = ms.ToArray();
+                await System.IO.File.WriteAllBytesAsync(fileFullPath, fileBytes);
+            }
 
             Staticfile staticfile = new Staticfile{
                 Name=fullName,
@@ -377,7 +404,7 @@ namespace static_sv.Services
                 Type=model.Type,
                 Size=fileBytes.Length,
                 Timestamp=fileTs,
-                FileData=fileBytes
+                // FileData=fileBytes
             };
 
             await _context.Staticfiles.AddAsync(staticfile);
@@ -425,9 +452,9 @@ namespace static_sv.Services
                 // }
                 // now = now.AddSeconds(1);
                 // long prevTs = DateConverter.ToTimestamp(now);
-                var previewName = $"{fileName}";
-                // string previewPath = Path.Combine(filePath, previewName);
-                // await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
+                var previewName = $"{fileName}_{fileTs}.png";
+                string previewPath = Path.Combine(filePath, previewName);
+                await System.IO.File.WriteAllBytesAsync(previewPath, prevBytes);
                 Staticfile relatedFile = new Staticfile{
                     Name=previewName,
                     FolderId=folder.FolderId,
@@ -435,7 +462,7 @@ namespace static_sv.Services
                     Type="image/png",
                     Size=prevBytes.Length,
                     Timestamp=fileTs,
-                    FileData=prevBytes,
+                    // FileData=prevBytes,
                     ParentFileId=staticfile.StaticfileId
                 };
 

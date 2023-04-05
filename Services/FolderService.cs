@@ -12,11 +12,13 @@ namespace static_sv.Services
         private readonly ILogger<FolderService> _logger;
         private readonly StaticContext _context;
         private readonly IConfiguration _configuration;
-        public FolderService(ILogger<FolderService> logger, StaticContext context, IConfiguration configuration)
+        private readonly IHostEnvironment _env;
+        public FolderService(ILogger<FolderService> logger, StaticContext context, IConfiguration configuration, IHostEnvironment env)
         {
             _logger = logger;
             _context = context;
             _configuration = configuration;
+            _env = env;
         }
         public async Task<Folder> CreateFolder(Folder folder)
         {
@@ -51,7 +53,7 @@ namespace static_sv.Services
             if(folder == null)
                 throw new ErrorResponseException(
                   StatusCodes.Status404NotFound,
-                    $"Folder with path {path}",
+                    $"Folder with path {path} not found",
                     new List<Error>()
                 );
             return folder;
@@ -78,7 +80,7 @@ namespace static_sv.Services
         public async Task RemoveFolder(long folderId)
         {
             Folder? folder = await _context.Folders.FirstOrDefaultAsync(f => f.FolderId == folderId);
-            // string folderFullPath = Path.Combine(_configuration["Static:Name"], folder!.Path!);
+            string folderFullPath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], folder!.Path!);
 
             // bool localFolder = Directory.Exists(folderFullPath);
 
@@ -118,7 +120,7 @@ namespace static_sv.Services
             int result = await _context.SaveChangesAsync();
             if(result > 0)
             {
-                // Directory.Delete(folderFullPath, true);
+                Directory.Delete(folderFullPath, true);
                 _logger.LogInformation("Successfully remove the folder");
                 return;
             }
