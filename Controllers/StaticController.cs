@@ -44,5 +44,16 @@ namespace static_sv.Controllers
             await _staticSv.DeleteFile(model.Url!, _xStaticSig);
             return Ok();
         }
+
+        [HttpPost]
+        [Route("file")]
+        [RequestSizeLimit(268_435_456)]
+        public async Task<ActionResult<StaticResModel>> CreateFile([FromForm]StaticModel model)
+        {
+            // var fileData = Request.Form.Files["file_data"];
+            // var previewFileData = Request.Form.Files["preview_file_data"];
+            // model.FileData=fileData;
+            return await _staticSv.CreateFileData(model, _xStaticSig);
+        }
     }
 }

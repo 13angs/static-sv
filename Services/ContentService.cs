@@ -19,23 +19,23 @@ namespace static_sv.Services
             _configuration = configuration;
             _static = @static;
         }
-        public FileContentResult GetContent(string name, ContentQueryModel model)
+        public PhysicalFileResult GetContent(string name, ContentQueryModel model)
         {
             // Get the file path
-            // var typePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"]);
+            var filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"]);
 
             // Check if the file exists
-            // string[] files = Directory.GetFiles(typePath, name, SearchOption.AllDirectories);
+            string[] localFiles = Directory.GetFiles(filePath, name, SearchOption.AllDirectories);
 
-            // if(!files.Any())
-            // {
-            //     throw new ErrorResponseException(
-            //         StatusCodes.Status404NotFound,
-            //         "File not found",
-            //         new List<Error>()
-            //     );
-            // }
-            // string file = files[0];
+            if(!localFiles.Any())
+            {
+                throw new ErrorResponseException(
+                    StatusCodes.Status404NotFound,
+                    "File not found in server",
+                    new List<Error>()
+                );
+            }
+            string localFile = localFiles[0];
 
             // if (!System.IO.File.Exists(file))
             // {
@@ -57,7 +57,7 @@ namespace static_sv.Services
             {
                 throw new ErrorResponseException(
                     StatusCodes.Status404NotFound,
-                    "File not found",
+                    "File not found in db",
                     new List<Error>()
                 );
             }
@@ -65,7 +65,7 @@ namespace static_sv.Services
             var file = files.ElementAt(0);
 
             // Get the file extension
-            // var extension = Path.GetExtension(file);
+            // var extension = Path.GetExtension(localFile);
 
             // // Get the content type based on the extension
             // var contentType = MediaTypeHeaderValue
@@ -73,13 +73,13 @@ namespace static_sv.Services
 
             // Return the image file
 
-            using (MemoryStream ms = new MemoryStream(file.FileData!))
-            {
-                byte[] pngBytes = ms.ToArray();
+            // using (MemoryStream ms = new MemoryStream(file.FileData!))
+            // {
+            //     byte[] pngBytes = ms.ToArray();
 
-                return File(pngBytes, file.Type!);
-            }
-            // return PhysicalFile(file, file.Type);
+            //     return File(pngBytes, file.Type!);
+            // }
+            return PhysicalFile(localFile, file.Type!);
         }
 
         public string GetMimeType(string extension)
