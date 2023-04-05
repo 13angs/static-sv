@@ -6,6 +6,7 @@ namespace static_sv.Interfaces
     public interface IStaticfile
     {
         public Task<StaticResModel> CreateFile(StaticModel model, string xStaticSig);
+        public Task<StaticResModel> CreateFileData(StaticModel model, string xStaticSig);
         public Task DeleteFile(string url, string xStaticSig);
         // public IEnumerable<string> GetImages(StaticQuery queryParams, string xStaticSig);
         public string GetStaticPath();

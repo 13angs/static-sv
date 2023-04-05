@@ -24,5 +24,8 @@ namespace static_sv.DTOs
 
         [JsonProperty("preview_file")]
         public string? PreviewFile { get; set; }
+
+        [JsonProperty("file_data")]
+        public IFormFile? FileData { get; set; }
     }
 }
