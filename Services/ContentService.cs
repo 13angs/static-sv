@@ -4,7 +4,6 @@ using static_sv.DTOs;
 using static_sv.Exceptions;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Amazon;
 
 namespace static_sv.Services
 {
