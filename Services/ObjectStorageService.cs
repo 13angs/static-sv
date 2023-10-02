@@ -2,6 +2,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Newtonsoft.Json;
 using static_sv.DTOs;
+using static_sv.Exceptions;
 using static_sv.Interfaces;
 
 namespace static_sv.Services
@@ -10,7 +11,8 @@ namespace static_sv.Services
     {
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _configuration;
-        public ObjectStorageService(IConfiguration configuration)
+        private readonly ILogger<ObjectStorageService> _logger;
+        public ObjectStorageService(IConfiguration configuration, ILogger<ObjectStorageService> logger)
         {
             _configuration = configuration;
             var options = new AmazonS3Config
@@ -19,6 +21,7 @@ namespace static_sv.Services
             };
             // Initialize the S3 client here, or use dependency injection to inject it.
             _s3Client = new AmazonS3Client(_configuration["S3Config:AccessKey"], _configuration["S3Config:SecretKey"], options);
+            _logger = logger;
         }
 
         public async Task<StaticDirectoryModel> GetFiles(StaticQuery model)
@@ -42,7 +45,7 @@ namespace static_sv.Services
 
                     foreach (var obj in response.S3Objects)
                     {
-                        if(staticModels.Count() >= model.Limit)
+                        if (staticModels.Count() >= model.Limit)
                         {
                             break;
                         }
@@ -65,7 +68,7 @@ namespace static_sv.Services
                             Type = metadataResponse.Headers.ContentType
                         };
 
-                        if(!String.IsNullOrEmpty(model.Name))
+                        if (!String.IsNullOrEmpty(model.Name))
                         {
                             if (obj.Key.Contains(model.Name))
                             {
@@ -91,6 +94,52 @@ namespace static_sv.Services
             // Console.WriteLine(JsonConvert.SerializeObject(staticModels));
             dirModel.Staticfiles = staticModels;
             return dirModel;
+        }
+
+        public async Task<DeleteObjectResponse> RemoveFile(string key)
+        {
+            try
+            {
+                var deleteObjectRequest = new DeleteObjectRequest
+                {
+                    BucketName = _configuration["S3Config:BucketName"],
+                    Key = key, // Specify the key (file name) of the object to delete
+                };
+
+                var response = await _s3Client.DeleteObjectAsync(deleteObjectRequest);
+                if (response.HttpStatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    _logger.LogInformation($"Object with key '{key}' deleted successfully.");
+                    return response;
+                }
+                else
+                {
+                    _logger.LogError($"Failed to delete object with key '{key}'.");
+                    throw new ErrorResponseException(
+                        StatusCodes.Status500InternalServerError,
+                        $"Failed to delete object with key '{key}'.",
+                        new List<Error>()
+                    );
+                }
+            }
+            catch (AmazonS3Exception amazonS3Exception)
+            {
+                _logger.LogError($"S3 Error: {amazonS3Exception.Message}");
+                throw new ErrorResponseException(
+                    StatusCodes.Status500InternalServerError,
+                    $"S3 Error: {amazonS3Exception.Message}",
+                    new List<Error>()
+                );
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Exception: {e.Message}");
+                throw new ErrorResponseException(
+                    StatusCodes.Status500InternalServerError,
+                    $"Exception: {e.Message}",
+                    new List<Error>()
+                );
+            }
         }
 
         public async Task<PutObjectResponse> UploadFile(StaticModel model)

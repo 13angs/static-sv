@@ -7,5 +7,6 @@ namespace static_sv.Interfaces
     {
         public Task<PutObjectResponse> UploadFile(StaticModel model);
         public Task<StaticDirectoryModel> GetFiles(StaticQuery model);
+        public Task<DeleteObjectResponse> RemoveFile(string key);
     }
 }

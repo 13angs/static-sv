@@ -36,7 +36,7 @@ namespace static_sv.Services
             string filePath = _configuration["Static:FilePath"];
             string fullPath = Path.Combine(contentPath, staticPath, filePath);
 
-            if(!Directory.Exists(fullPath))
+            if (!Directory.Exists(fullPath))
                 Directory.CreateDirectory(fullPath);
             return fullPath;
         }
@@ -87,10 +87,10 @@ namespace static_sv.Services
 
             // Save the image to the server's file system
             Folder folder = new Folder();
-            folder.Path=model.Folder;
-            folder = await _folder.CreateFolder(folder);    
+            folder.Path = model.Folder;
+            folder = await _folder.CreateFolder(folder);
 
-            if(!Directory.Exists(filePath))
+            if (!Directory.Exists(filePath))
             {
                 Directory.CreateDirectory(filePath);
             }
@@ -100,25 +100,26 @@ namespace static_sv.Services
             var fullName = $"{fileName}_{fileTs}.{fileType}";
             string fileFullPath = Path.Combine(filePath, fullName);
 
-            using(var memoryStream = new MemoryStream(fileBytes))
+            using (var memoryStream = new MemoryStream(fileBytes))
             {
                 await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
             }
 
-            Staticfile staticfile = new Staticfile{
-                Name=fullName,
-                FolderId=folder.FolderId,
-                Path=Path.Combine(model.Folder!, fullName),
-                Type=model.Type,
-                Size=fileBytes.Length,
-                Timestamp=fileTs,
+            Staticfile staticfile = new Staticfile
+            {
+                Name = fullName,
+                FolderId = folder.FolderId,
+                Path = Path.Combine(model.Folder!, fullName),
+                Type = model.Type,
+                Size = fileBytes.Length,
+                Timestamp = fileTs,
                 // FileData=fileBytes
             };
 
             await _context.Staticfiles.AddAsync(staticfile);
             int result = await _context.SaveChangesAsync();
 
-            if(result <= 0)
+            if (result <= 0)
             {
                 throw new ErrorResponseException(
                     StatusCodes.Status500InternalServerError,
@@ -139,26 +140,27 @@ namespace static_sv.Services
                 ErrorCode = "SUCCESS"
             };
 
-            if(model.AddPreviewUrl)
+            if (model.AddPreviewUrl)
             {
                 var prevBytes = Convert.FromBase64String(model.PreviewFile!);
                 // now = now.AddSeconds(1);
                 // long prevTs = DateConverter.ToTimestamp(now);
                 var previewName = $"{fileName}_{fileTs}.png";
                 string previewPath = Path.Combine(filePath, previewName);
-                using(var prevStream = new MemoryStream(prevBytes))
+                using (var prevStream = new MemoryStream(prevBytes))
                 {
                     await System.IO.File.WriteAllBytesAsync(previewPath, prevStream.ToArray());
                 }
-                Staticfile relatedFile = new Staticfile{
-                    Name=previewName,
-                    FolderId=folder.FolderId,
-                    Path=Path.Combine(model.Folder!, previewName),
-                    Type="image/png",
-                    Size=prevBytes.Length,
-                    Timestamp=fileTs,
+                Staticfile relatedFile = new Staticfile
+                {
+                    Name = previewName,
+                    FolderId = folder.FolderId,
+                    Path = Path.Combine(model.Folder!, previewName),
+                    Type = "image/png",
+                    Size = prevBytes.Length,
+                    Timestamp = fileTs,
                     // FileData=prevBytes,
-                    ParentFileId=staticfile.StaticfileId
+                    ParentFileId = staticfile.StaticfileId
                 };
 
                 await _context.Staticfiles.AddAsync(relatedFile);
@@ -169,7 +171,7 @@ namespace static_sv.Services
                 // }
 
 
-                if(result <= 0)
+                if (result <= 0)
                 {
                     throw new ErrorResponseException(
                         StatusCodes.Status500InternalServerError,
@@ -198,9 +200,10 @@ namespace static_sv.Services
             _requestValidator.Validate(deleteContent, xStaticSig);
             Uri imageUri = new Uri(url);
             string query = imageUri.PathAndQuery;
-            string strId = HttpUtility.ParseQueryString(imageUri.Query).Get("id")!;
-            long staticId;
-            Int64.TryParse(strId, out staticId);
+            string dirId = HttpUtility.ParseQueryString(imageUri.Query).Get("dir")!;
+            // Int64.TryParse(strId, out staticId);
+            string fileName = Path.GetFileName(imageUri.LocalPath);
+            string key = Path.Combine("files", dirId, fileName);
             // string imageName = segments.Last().Replace("/", "");
 
             // string filePath = GetStaticPath();
@@ -210,87 +213,75 @@ namespace static_sv.Services
 
             // string fullPath = Path.Combine(filePath, imageName);
             // Console.WriteLine(filePath);
-            StaticfileQuery staticQuery = new StaticfileQuery{
-                Is=StaticfileQueryStore.Staticfile,
-                StaticfileId=staticId
-                // Name=imageName
-            };
+            // StaticfileQuery staticQuery = new StaticfileQuery{
+            //     Is=StaticfileQueryStore.Staticfile,
+            //     StaticfileId=staticId
+            //     // Name=imageName
+            // };
 
-            var staticfiles = GetStaticfiles(staticQuery);
-            Staticfile? staticfile = new Staticfile();
-            string filePath = String.Empty;
+            // var staticfiles = GetStaticfiles(staticQuery);
+            // Staticfile? staticfile = new Staticfile();
+            // string filePath = String.Empty;
 
-            if(staticfiles.Any())
+            // if(staticfiles.Any())
+            // {
+            //     // Console.WriteLine("getting files");
+            //     // return Task.CompletedTask;
+            //     staticfile=staticfiles.FirstOrDefault();
+
+            //     // find the related file
+            //     staticQuery = new StaticfileQuery{
+            //         Is=StaticfileQueryStore.RelatedFile,
+            //         StaticfileId=staticfile!.StaticfileId
+            //     };
+
+            //     var relatedFiles = GetStaticfiles(staticQuery);
+
+            //     if(relatedFiles.Any())
+            //     {
+            //         foreach(var relatedFile in relatedFiles)
+            //         {
+            //             filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], relatedFile!.Path!);
+            //             File.Delete(filePath);
+            //         }
+            //         _context.Staticfiles.RemoveRange(relatedFiles);
+            //     }
+
+            //     filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], staticfile!.Path!);
+
+            //     System.IO.File.Delete(filePath);
+
+            //     _context.Staticfiles.Remove(staticfile!);
+            //     await _context.SaveChangesAsync();
+            //     return;
+            // }
+            var response = await _objSv.RemoveFile(key);
+
+            if (response.HttpStatusCode != HttpStatusCode.NoContent)
             {
-                // Console.WriteLine("getting files");
-                // return Task.CompletedTask;
-                staticfile=staticfiles.FirstOrDefault();
-
-                // find the related file
-                staticQuery = new StaticfileQuery{
-                    Is=StaticfileQueryStore.RelatedFile,
-                    StaticfileId=staticfile!.StaticfileId
-                };
-
-                var relatedFiles = GetStaticfiles(staticQuery);
-
-                if(relatedFiles.Any())
-                {
-                    foreach(var relatedFile in relatedFiles)
-                    {
-                        filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], relatedFile!.Path!);
-                        File.Delete(filePath);
-                    }
-                    _context.Staticfiles.RemoveRange(relatedFiles);
-                }
-                
-                filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"], staticfile!.Path!);
-
-                // if(!System.IO.File.Exists(filePath))
-                // {
-                //     _logger.LogWarning("File doesn't exist. Deleting from db...");
-                //     _context.Staticfiles.Remove(staticfile);
-                //     await _context.SaveChangesAsync();
-                //     throw new ErrorResponseException(
-                //         StatusCodes.Status400BadRequest,
-                //         $"image name: {imageName} doesn't exist",
-                //         new List<Error>{
-                //             new Error{
-                //                 Message=url,
-                //                 Field="url"
-                //             }
-                //         }
-                //     );
-                // }
-
-                System.IO.File.Delete(filePath);
-
-                _context.Staticfiles.Remove(staticfile!);
-                await _context.SaveChangesAsync();
-                return;
-            }
-
-            throw new ErrorResponseException(
-                StatusCodes.Status400BadRequest,
-                $"image with id: {strId} doesn't exist",
-                new List<Error>{
+                throw new ErrorResponseException(
+                    StatusCodes.Status400BadRequest,
+                    $"image with id: {key} doesn't exist",
+                    new List<Error>{
                     new Error{
-                        Message=strId,
+                        Message=key,
                         Field="id"
                     }
-                }
-            );
+                    }
+                );
+            }
+            return;
         }
 
         public IEnumerable<Staticfile> GetStaticfiles(StaticfileQuery query)
         {
             IEnumerable<Staticfile> staticfiles = new List<Staticfile>();
 
-            if(query.Is == StaticfileQueryStore.Folder)
+            if (query.Is == StaticfileQueryStore.Folder)
             {
-                return staticfiles=_context.Staticfiles
+                return staticfiles = _context.Staticfiles
                     .Include(s => s.RelatedFiles)
-                    .Where(s => s.FolderId == query.FolderId && 
+                    .Where(s => s.FolderId == query.FolderId &&
                         (!String.IsNullOrEmpty(query.Type) ? s.Type!.Contains(query.Type) : true) &&
                         (!String.IsNullOrEmpty(query.Name) ? s.Name!.Contains(query.Name) : true)
                         )
@@ -298,18 +289,18 @@ namespace static_sv.Services
                     .AsNoTracking();
             }
 
-            if(query.Is == StaticfileQueryStore.Staticfile)
+            if (query.Is == StaticfileQueryStore.Staticfile)
             {
-                return staticfiles=_context.Staticfiles
+                return staticfiles = _context.Staticfiles
                     .Where(f => f.StaticfileId == query.StaticfileId ||
                             f.Name == query.Name
                         )
                     .AsNoTracking();
             }
 
-            if(query.Is == StaticfileQueryStore.RelatedFile)
+            if (query.Is == StaticfileQueryStore.RelatedFile)
             {
-                return staticfiles=_context.Staticfiles
+                return staticfiles = _context.Staticfiles
                     .Include(s => s.RelatedFiles)
                     .Where(f => f.ParentFileId == query.StaticfileId ||
                             f.Name == query.Name
@@ -320,16 +311,16 @@ namespace static_sv.Services
             throw new ErrorResponseException(
                 StatusCodes.Status501NotImplemented,
                 $"Type not implement",
-                new List<Error>{}
+                new List<Error> { }
             );
 
         }
-    
+
         public async Task<StaticResModel> CreateFileData(StaticModel model, string xStaticSig)
         {
             // vlidate the signature
             // vlidate the signature
-            object content = new{};
+            object content = new { };
             var serverSig = _requestValidator.Validate(content, xStaticSig);
 
             // Decode the Base64 encoded image data
@@ -383,7 +374,7 @@ namespace static_sv.Services
             // await System.IO.File.WriteAllBytesAsync(fileFullPath, memoryStream.ToArray());
             Console.WriteLine(model.AddPreviewUrl);
 
-            using(var ms = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
                 await model.FileData!.CopyToAsync(ms);
                 fileBytes = ms.ToArray();
@@ -415,19 +406,19 @@ namespace static_sv.Services
 
             // string url = _configuration["ASPNETCORE_DOMAIN_URL"];
             // string fileUrl = Path.Combine(url, contentApi, staticfile.Name);
-            model.LocalPath=fileFullPath;
-            model.Name=fullName;
+            model.LocalPath = fileFullPath;
+            model.Name = fullName;
 
             var response = await _objSv.UploadFile(model);
 
-            if(response.HttpStatusCode != HttpStatusCode.OK)
+            if (response.HttpStatusCode != HttpStatusCode.OK)
             {
                 _logger.LogError("Failed saving Staticfile");
-                 throw new ErrorResponseException(
-                    StatusCodes.Status500InternalServerError,
-                    "Failed saving Staticfile",
-                    new List<Error>()
-                );
+                throw new ErrorResponseException(
+                   StatusCodes.Status500InternalServerError,
+                   "Failed saving Staticfile",
+                   new List<Error>()
+               );
             }
 
             // return Ok(new { filePath = $"images/{fileName}" });
