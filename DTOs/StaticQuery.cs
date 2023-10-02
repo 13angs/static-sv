@@ -10,10 +10,13 @@ namespace static_sv.DTOs
         public virtual string? Name { get; set; }
 
         [JsonProperty("limit")]
-        public virtual int Limit { get; set; }
+        public virtual int Limit { get; set; } = 10;
 
         [JsonProperty("type")]
         public virtual string? Type { get; set; }
+
+        [JsonProperty("Dir")]
+        public virtual string? Directory { get; set; }
     }
 
     public class StaticQueryStore

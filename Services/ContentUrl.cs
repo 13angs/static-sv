@@ -19,7 +19,7 @@ namespace static_sv.Services
             string url = configuration["ASPNETCORE_DOMAIN_URL"];
             string contentApi = configuration["Static:Api:Content"];
             string fileUrl = Path.Combine(url, contentApi, model.Name!);
-            return $"{fileUrl}?filetype={model.Type!.Split("/")[1]}&dir={model.Folder}";
+            return $"{fileUrl}?dir={model.Folder}";
         }
     }
 }

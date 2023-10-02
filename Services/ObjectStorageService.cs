@@ -1,5 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Newtonsoft.Json;
 using static_sv.DTOs;
 using static_sv.Interfaces;
 
@@ -19,6 +20,79 @@ namespace static_sv.Services
             // Initialize the S3 client here, or use dependency injection to inject it.
             _s3Client = new AmazonS3Client(_configuration["S3Config:AccessKey"], _configuration["S3Config:SecretKey"], options);
         }
+
+        public async Task<StaticDirectoryModel> GetFiles(StaticQuery model)
+        {
+            // Create an Amazon S3 client with your credentials and region.
+            StaticDirectoryModel dirModel = new StaticDirectoryModel();
+            List<StaticfileModel> staticModels = new List<StaticfileModel>();
+            try
+            {
+                ListObjectsV2Request request = new ListObjectsV2Request
+                {
+                    BucketName = _configuration["S3Config:BucketName"],
+                    Prefix = Path.Combine("files", model.Directory!) + "/",
+                    // MaxKeys = 5
+                };
+
+                ListObjectsV2Response response;
+                do
+                {
+                    response = await _s3Client.ListObjectsV2Async(request);
+
+                    foreach (var obj in response.S3Objects)
+                    {
+                        if(staticModels.Count() >= model.Limit)
+                        {
+                            break;
+                        }
+
+                        // Console.WriteLine($"Object Key: {obj.Key.Split("/").Last()}");
+                        var metadataResponse = await _s3Client.GetObjectMetadataAsync(_configuration["S3Config:BucketName"], obj.Key);
+                        var formattedKey = new StaticfileModel
+                        {
+                            Name = obj.Key.Split("/").Last(),
+                            Url = ContentUrl.GetUrl(
+                                    new StaticModel
+                                    {
+                                        Name = obj.Key.Split("/").Last(),
+                                        Folder = model.Directory
+                                    },
+                                    _configuration
+                                ),
+                            ModifiedDate = obj.LastModified,
+                            Size = obj.Size,
+                            Type = metadataResponse.Headers.ContentType
+                        };
+
+                        if(!String.IsNullOrEmpty(model.Name))
+                        {
+                            if (obj.Key.Contains(model.Name))
+                            {
+                                // Console.WriteLine($"Matched Object Key: {obj.Key}");
+                                staticModels.Add(formattedKey);
+                            }
+                            continue;
+                        }
+                        staticModels.Add(formattedKey);
+                    }
+
+                    request.ContinuationToken = response.NextContinuationToken;
+                } while (response.IsTruncated);
+            }
+            catch (AmazonS3Exception amazonS3Exception)
+            {
+                Console.WriteLine($"S3 Error: {amazonS3Exception.Message}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception: {e.Message}");
+            }
+            // Console.WriteLine(JsonConvert.SerializeObject(staticModels));
+            dirModel.Staticfiles = staticModels;
+            return dirModel;
+        }
+
         public async Task<PutObjectResponse> UploadFile(StaticModel model)
         {
             // string url = $"https://{_objSetting.Value.ServiceUrl}";
@@ -42,7 +116,7 @@ namespace static_sv.Services
             // }
 
             // url = Path.Combine($"https://{_objSetting.Value.ServiceUrl}", fileType);
-            
+
 
             var request = new PutObjectRequest
             {
@@ -50,7 +124,6 @@ namespace static_sv.Services
                 Key = Path.Combine("files", model.Folder!, model.Name!),
                 ContentType = model.Type,
                 FilePath = model.LocalPath,
-                
                 // CannedACL = S3CannedACL.PublicRead,
             };
 
