@@ -5,7 +5,7 @@ namespace static_sv.Interfaces
 {
     public interface IContent
     {
-        public PhysicalFileResult GetContent(string name, ContentQueryModel model);
+        public Task<FileContentResult> GetContent(string name, ContentQueryModel model);
         public string GetMimeType(string extension);
     }
 }

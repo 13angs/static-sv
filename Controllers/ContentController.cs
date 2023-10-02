@@ -18,9 +18,9 @@ namespace static_sv.Controllers
 
         // [HttpGet("{*path}")]
         [HttpGet("{name}")]
-        public IActionResult Index([FromRoute] string name, [FromQuery] ContentQueryModel model)
+        public async Task<IActionResult> Index([FromRoute] string name, [FromQuery] ContentQueryModel model)
         {
-            return _content.GetContent(name, model);
+            return await _content.GetContent(name, model);
         }
     }
 }

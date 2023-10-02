@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using static_sv.Interfaces;
-using Microsoft.Net.Http.Headers;
 using static_sv.DTOs;
-using static_sv.Models;
 using static_sv.Exceptions;
+using Amazon.S3;
+using Amazon.S3.Model;
 
 namespace static_sv.Services
 {
@@ -11,75 +11,65 @@ namespace static_sv.Services
     {
         private readonly IConfiguration _configuration;
         private readonly IHostEnvironment _env;
-
         private readonly IStaticfile _static;
+        private readonly IAmazonS3 _s3Client;
         public ContentService(IHostEnvironment env, IConfiguration configuration, IStaticfile @static)
         {
             _env = env;
             _configuration = configuration;
             _static = @static;
-        }
-        public PhysicalFileResult GetContent(string name, ContentQueryModel model)
-        {
-            // Get the file path
-            var filePath = Path.Combine(_env.ContentRootPath, _configuration["Static:Name"], _configuration["Static:FilePath"]);
 
-            // Check if the file exists
-            string[] localFiles = Directory.GetFiles(filePath, name, SearchOption.AllDirectories);
-
-            if(!localFiles.Any())
+            var options = new AmazonS3Config
             {
-                throw new ErrorResponseException(
-                    StatusCodes.Status404NotFound,
-                    "File not found in server",
-                    new List<Error>()
-                );
-            }
-            string localFile = localFiles[0];
-
-            // if (!System.IO.File.Exists(file))
-            // {
-            //     throw new ErrorResponseException(
-            //         StatusCodes.Status404NotFound,
-            //         "File not found",
-            //         new List<Error>()
-            //     );
-            // }
-
-            StaticfileQuery staticfileQuery = new StaticfileQuery{
-                StaticfileId=model.Id,
-                Is=StaticfileQueryStore.Staticfile
+                ServiceURL = _configuration["S3Config:ServiceUrl"]
             };
 
-            var files = _static.GetStaticfiles(staticfileQuery);
-
-            if(!files.Any())
+            // Initialize the S3 client here, or use dependency injection to inject it.
+            _s3Client = new AmazonS3Client(_configuration["S3Config:AccessKey"], _configuration["S3Config:SecretKey"], options);
+        }
+        public async Task<FileContentResult> GetContent(string name, ContentQueryModel model)
+        {
+            try
             {
+                // Create a request to get the object with a specific "Content-Type"
+                string objectKey = Path.Combine("files", model!.Directory!, name);
+                string bucketName = _configuration["S3Config:BucketName"];
+                var request = new GetObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = objectKey,
+                };
+
+                // Set the desired "Content-Type" header value
+                // request.Headers.ContentType = "image/*";
+
+                // Get the object from S3
+                var response = await _s3Client.GetObjectAsync(request);
+
+                // Read the response.ResponseStream into a byte array
+                using (var memoryStream = new MemoryStream())
+                {
+                    await response.ResponseStream.CopyToAsync(memoryStream);
+                    var fileContents = memoryStream.ToArray();
+
+                    // Determine the content type for the PhysicalFileResult
+                    var contentType = response.Headers.ContentType;
+
+                    // Return the image as a PhysicalFileResult
+                    return File(fileContents, contentType, response.Key);
+                }
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
+                // Handle the exception appropriately, e.g., return an error view
                 throw new ErrorResponseException(
                     StatusCodes.Status404NotFound,
-                    "File not found in db",
+                    e.Message,
                     new List<Error>()
                 );
             }
 
-            var file = files.ElementAt(0);
-
-            // Get the file extension
-            // var extension = Path.GetExtension(localFile);
-
-            // // Get the content type based on the extension
-            // var contentType = MediaTypeHeaderValue
-            //     .Parse(GetMimeType(extension)).ToString();
-
-            // Return the image file
-
-            // using (MemoryStream ms = new MemoryStream(file.FileData!))
-            // {
-            //     byte[] pngBytes = ms.ToArray();
-
-            //     return File(pngBytes, file.Type!);
-            // }
-            return PhysicalFile(localFile, file.Type!);
         }
 
         public string GetMimeType(string extension)

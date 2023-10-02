@@ -27,5 +27,8 @@ namespace static_sv.DTOs
 
         [JsonProperty("file_data")]
         public IFormFile? FileData { get; set; }
+
+        [JsonProperty("local_path")]
+        public string? LocalPath { get; set; }
     }
 }

@@ -21,6 +21,7 @@ builder.Services.AddScoped<IStaticfile, StaticfileService>();
 builder.Services.AddScoped<IStaticDirectory, StaticDirectoryService>();
 builder.Services.AddScoped<IContent, ContentService>();
 builder.Services.AddScoped<IFolder, FolderService>();
+builder.Services.AddScoped<IObjectStorage, ObjectStorageService>();
 
 // configure controller to use Newtonsoft as a default serializer
 builder.Services.AddControllers()
