@@ -77,6 +77,14 @@ namespace static_sv.Services
                             }
                             continue;
                         }
+                        if(!String.IsNullOrEmpty(model.Type))
+                        {
+                            if (formattedKey.Type.Contains(model.Type))
+                            {
+                                staticModels.Add(formattedKey);
+                            }
+                            continue;
+                        }
                         staticModels.Add(formattedKey);
                     }
 
